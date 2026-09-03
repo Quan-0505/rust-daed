@@ -1,0 +1,246 @@
+diff --git a/crates/dae-outbound/src/lib.rs b/crates/dae-outbound/src/lib.rs
+index 91b8d7a..ce53954 100644
+--- a/crates/dae-outbound/src/lib.rs
++++ b/crates/dae-outbound/src/lib.rs
+@@ -20,6 +20,7 @@ pub mod production_matrix;
+ pub mod security_underlay_capability;
+ pub mod shadowsocks;
+ pub mod shared_transport;
++pub mod sticky;
+ pub mod socks5;
+ pub mod source_shape_registry;
+ pub mod stream_wrapper_capability;
+diff --git a/crates/dae-outbound/src/shared_transport/dataplane.rs b/crates/dae-outbound/src/shared_transport/dataplane.rs
+index 3bdaa97..a7142bf 100644
+--- a/crates/dae-outbound/src/shared_transport/dataplane.rs
++++ b/crates/dae-outbound/src/shared_transport/dataplane.rs
+@@ -65,7 +65,7 @@ pub fn http_upgrade_exchange(
+     payload: &[u8],
+     timeout: Duration,
+ ) -> Result<SharedTransportLoopbackReport, OutboundError> {
+-    let mut stream = TcpStream::connect(endpoint)
++    let mut stream = crate::sticky::sticky_connect(endpoint)
+         .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
+     set_timeout(&mut stream, timeout)?;
+     let request = http_upgrade_request(options)?;
+@@ -94,7 +94,7 @@ pub fn websocket_exchange(
+     payload: &[u8],
+     timeout: Duration,
+ ) -> Result<SharedTransportLoopbackReport, OutboundError> {
+-    let mut stream = TcpStream::connect(endpoint)
++    let mut stream = crate::sticky::sticky_connect(endpoint)
+         .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
+     set_timeout(&mut stream, timeout)?;
+     let request = websocket_handshake_request(options, DEFAULT_WS_KEY)?;
+@@ -124,7 +124,7 @@ pub fn simpleobfs_http_exchange(
+     payload: &[u8],
+     timeout: Duration,
+ ) -> Result<SharedTransportLoopbackReport, OutboundError> {
+-    let mut stream = TcpStream::connect(endpoint)
++    let mut stream = crate::sticky::sticky_connect(endpoint)
+         .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
+     set_timeout(&mut stream, timeout)?;
+     let request = simpleobfs_http_request(options)?;
+diff --git a/crates/dae-outbound/src/shared_transport/grpc.rs b/crates/dae-outbound/src/shared_transport/grpc.rs
+index 0c921e6..e4d65bd 100644
+--- a/crates/dae-outbound/src/shared_transport/grpc.rs
++++ b/crates/dae-outbound/src/shared_transport/grpc.rs
+@@ -401,7 +401,7 @@ pub fn grpc_hunk_exchange(
+     payload: &[u8],
+     timeout: Duration,
+ ) -> Result<GrpcLifecycleReport, OutboundError> {
+-    let mut stream = TcpStream::connect(endpoint)
++    let mut stream = crate::sticky::sticky_connect(endpoint)
+         .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
+     set_timeout(&stream, timeout)?;
+     stream
+diff --git a/crates/dae-outbound/src/shared_transport/meek.rs b/crates/dae-outbound/src/shared_transport/meek.rs
+index 5063bbd..7606364 100644
+--- a/crates/dae-outbound/src/shared_transport/meek.rs
++++ b/crates/dae-outbound/src/shared_transport/meek.rs
+@@ -92,7 +92,7 @@ pub fn meek_polling_exchange(
+ ) -> Result<MeekRoundTripReport, OutboundError> {
+     let mut echoed_payloads = Vec::with_capacity(writes.len());
+     for body in writes {
+-        let mut stream = TcpStream::connect(endpoint)
++        let mut stream = crate::sticky::sticky_connect(endpoint)
+             .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
+         set_timeout(&stream, timeout)?;
+         stream
+diff --git a/crates/dae-outbound/src/shared_transport/mux.rs b/crates/dae-outbound/src/shared_transport/mux.rs
+index ca23f8b..7896ca8 100644
+--- a/crates/dae-outbound/src/shared_transport/mux.rs
++++ b/crates/dae-outbound/src/shared_transport/mux.rs
+@@ -277,7 +277,7 @@ pub fn mux_frame_exchange(
+     payload: &[u8],
+     timeout: Duration,
+ ) -> Result<MuxLifecycleReport, OutboundError> {
+-    let mut stream = TcpStream::connect(endpoint)
++    let mut stream = crate::sticky::sticky_connect(endpoint)
+         .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
+     set_timeout(&stream, timeout)?;
+     stream
+diff --git a/crates/dae-outbound/src/shared_transport/reality.rs b/crates/dae-outbound/src/shared_transport/reality.rs
+index 56d161b..0dafde8 100644
+--- a/crates/dae-outbound/src/shared_transport/reality.rs
++++ b/crates/dae-outbound/src/shared_transport/reality.rs
+@@ -136,7 +136,7 @@ pub fn reality_mutation_exchange(
+     payload: &[u8],
+     timeout: Duration,
+ ) -> Result<RealityMutationReport, OutboundError> {
+-    let mut stream = TcpStream::connect(endpoint)
++    let mut stream = crate::sticky::sticky_connect(endpoint)
+         .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
+     set_timeout(&stream, timeout)?;
+     write_reality_harness_message(&mut stream, options, payload)?;
+diff --git a/crates/dae-outbound/src/shared_transport/xhttp/http1.rs b/crates/dae-outbound/src/shared_transport/xhttp/http1.rs
+index 6a4086d..5da4c83 100644
+--- a/crates/dae-outbound/src/shared_transport/xhttp/http1.rs
++++ b/crates/dae-outbound/src/shared_transport/xhttp/http1.rs
+@@ -35,7 +35,7 @@ pub fn xhttp_packet_exchange(
+     payload: &[u8],
+     timeout: Duration,
+ ) -> Result<XHttpLifecycleReport, OutboundError> {
+-    let mut stream = TcpStream::connect(endpoint)
++    let mut stream = crate::sticky::sticky_connect(endpoint)
+         .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
+     set_timeout(&stream, timeout)?;
+     let request = xhttp_packet_request(options, payload)?;
+diff --git a/crates/dae-outbound/src/sticky.rs b/crates/dae-outbound/src/sticky.rs
+new file mode 100644
+index 0000000..57c6fed
+--- /dev/null
++++ b/crates/dae-outbound/src/sticky.rs
+@@ -0,0 +1,132 @@
++//! Sticky IP caching for proxy server connections.
++//!
++//! Ported from `olicesx/outbound` `dialer/stickyip` (the kdae engine's
++//! sticky-ip feature): within the TTL window the same resolved IP is reused
++//! for a proxy *domain*, so DNS rotation cannot cause per-connection address
++//! drift on the node dial. IP endpoints pass through untouched.
++
++use std::collections::HashMap;
++use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
++use std::sync::{Mutex, OnceLock};
++use std::time::{Duration, Instant};
++
++/// How long a successful proxy IP resolution is reused.
++/// Mirrors kdae's CacheTTL (5 minutes, >= one health-check cycle).
++const STICKY_TTL: Duration = Duration::from_secs(300);
++
++struct StickyEntry {
++    /// Resolved "ip:port" connect address.
++    addr: String,
++    expires_at: Instant,
++}
++
++static STICKY_CACHE: OnceLock<Mutex<HashMap<String, StickyEntry>>> = OnceLock::new();
++
++fn cache() -> &'static Mutex<HashMap<String, StickyEntry>> {
++    STICKY_CACHE.get_or_init(|| Mutex::new(HashMap::new()))
++}
++
++/// Returns the sticky-resolved connect address for `endpoint`.
++///
++/// - Bare IP endpoints (with or without port) pass through unchanged.
++/// - Domain endpoints reuse a cached resolution within the TTL; otherwise they
++///   resolve once (first address) and cache the result.
++pub fn sticky_resolve(endpoint: &str) -> String {
++    // Fast path: already a concrete socket address (e.g. "1.2.3.4:443").
++    if endpoint.parse::<SocketAddr>().is_ok() {
++        return endpoint.to_string();
++    }
++    let (host, port) = split_host_port(endpoint);
++    // Bare IP host (e.g. "1.2.3.4" without port).
++    if host.parse::<std::net::IpAddr>().is_ok() {
++        return endpoint.to_string();
++    }
++
++    let key = endpoint.to_string();
++    let now = Instant::now();
++    {
++        let map = cache().lock().unwrap();
++        if let Some(entry) = map.get(&key) {
++            if entry.expires_at > now {
++                return entry.addr.clone();
++            }
++        }
++    }
++
++    // Resolve and cache the first address.
++    let port_u16: u16 = port.parse().unwrap_or(443);
++    let addr = match (host.as_str(), port_u16).to_socket_addrs() {
++        Ok(mut it) => match it.next() {
++            Some(a) => a.to_string(),
++            None => endpoint.to_string(),
++        },
++        Err(_) => endpoint.to_string(),
++    };
++
++    let mut map = cache().lock().unwrap();
++    map.insert(
++        key,
++        StickyEntry {
++            addr: addr.clone(),
++            expires_at: now + STICKY_TTL,
++        },
++    );
++    addr
++}
++
++/// Sticky version of `TcpStream::connect` for proxy node dials.
++pub fn sticky_connect(endpoint: &str) -> std::io::Result<TcpStream> {
++    TcpStream::connect(sticky_resolve(endpoint).as_str())
++}
++
++fn split_host_port(endpoint: &str) -> (String, String) {
++    // "[::1]:443" style.
++    if let Some(rest) = endpoint.strip_prefix('[') {
++        if let Some(idx) = rest.find(']') {
++            let host = &rest[..idx];
++            let port = rest[idx + 1..].strip_prefix(':').unwrap_or("").to_string();
++            return (host.to_string(), if port.is_empty() { "443".to_string() } else { port });
++        }
++    }
++    match endpoint.rsplit_once(':') {
++        Some((h, p)) => (h.to_string(), p.to_string()),
++        None => (endpoint.to_string(), "443".to_string()),
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn ip_endpoint_passthrough() {
++        assert_eq!(sticky_resolve("1.2.3.4:443"), "1.2.3.4:443");
++        assert_eq!(sticky_resolve("1.2.3.4"), "1.2.3.4");
++        assert_eq!(sticky_resolve("[::1]:443"), "[::1]:443");
++    }
++
++    #[test]
++    fn domain_endpoint_is_cached_and_stable() {
++        let a = sticky_resolve("localhost:18080");
++        let b = sticky_resolve("localhost:18080");
++        assert_eq!(a, b, "same endpoint must keep the same resolved address");
++        assert!(
++            a.starts_with("127.0.0.1:18080") || a.starts_with("[::1]:18080"),
++            "localhost should resolve to loopback, got {a}"
++        );
++    }
++
++    #[test]
++    fn distinct_endpoints_are_distinct_cache_keys() {
++        let a = sticky_resolve("localhost:18081");
++        let b = sticky_resolve("localhost:18082");
++        assert!(a.ends_with(":18081"));
++        assert!(b.ends_with(":18082"));
++    }
++
++    #[test]
++    fn split_host_port_handles_ipv6() {
++        assert_eq!(split_host_port("[2001:db8::1]:8443"), ("2001:db8::1".to_string(), "8443".to_string()));
++        assert_eq!(split_host_port("example.com:443"), ("example.com".to_string(), "443".to_string()));
++    }
++}
