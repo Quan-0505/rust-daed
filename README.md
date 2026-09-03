@@ -51,3 +51,26 @@ sticky-ip 实现在 `crates/dae-outbound/src/sticky.rs`（新增模块 + 8 处�
 > - 本仓库构建/分发 daed（DaedNext）安装包；上游 [DaedNext](https://github.com/ksong008/DaedNext) 为 **MIT / AGPL-3.0** 双许可
 > - sticky-ip 特性移植自 Go 版 kdae 的 [olicesx/outbound](https://github.com/olicesx/outbound)（AGPL-3.0），因此本仓库采用 AGPL-3.0
 > - 使用与再分发请遵循对应上游许可证
+## OpenWrt 安装包
+
+支持 **OpenWrt 25.12**（apk）与 opkg 固件，x86_64 + aarch64（R2S/R3S/R4S）。
+
+| 设备 | 架构 | 包 |
+|---|---|---|
+| X86 软路由 | x86_64 | `daed_3.1.1-r1_openwrt_x86_64_jemalloc.ipk` / `*.apk` |
+| NanoPi R2S | aarch64_cortex-a53 | `*_cortex-a53_*` |
+| NanoPi R4S | aarch64_cortex-a72 | `*_cortex-a72_*` |
+| NanoPi R3S / 通用 | aarch64_generic | `*_generic_*` |
+
+```sh
+# OpenWrt 25.12（apk）
+apk add --allow-untrusted daed-3.1.1-r1.openwrt-x86_64-jemalloc.apk
+/etc/init.d/daed enable && /etc/init.d/daed start
+# opkg 固件
+opkg install daed_3.1.1-r1_openwrt_x86_64_jemalloc.ipk
+# Web 面板: http://<路由器IP>:2023
+```
+
+下载：**[v3.1.1-sticky-openwrt Release](https://github.com/Quan-0505/rust-daed/releases/tag/v3.1.1-sticky-openwrt)**
+
+> 静态链接（crt-static），不依赖 libc；含 web + geoip/geosite + init 脚本 + uci 配置
