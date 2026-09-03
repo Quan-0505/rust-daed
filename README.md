@@ -43,3 +43,11 @@ sticky-ip 实现在 `crates/dae-outbound/src/sticky.rs`（新增模块 + 8 处�
 应用补丁：`cd DaeNext && git apply patches/sticky-ip-full.patch`
 
 验证：`cargo test -p dae-outbound sticky::tests`（4/4 通过）
+## License
+
+本项目以 [GNU Affero General Public License v3.0](LICENSE) 发布。
+
+> 许可证说明：
+> - 本仓库构建/分发 daed（DaedNext）安装包；上游 [DaedNext](https://github.com/ksong008/DaedNext) 为 **MIT / AGPL-3.0** 双许可
+> - sticky-ip 特性移植自 Go 版 kdae 的 [olicesx/outbound](https://github.com/olicesx/outbound)（AGPL-3.0），因此本仓库采用 AGPL-3.0
+> - 使用与再分发请遵循对应上游许可证
