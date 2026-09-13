@@ -36,7 +36,7 @@
 ```sh
 # Debian / Ubuntu
 sudo dpkg -i rust-daed-x86.deb
-# OpenWrt 25.12（apk v2）
+# OpenWrt 25.12（apk v3 / apk-tools 3）
 apk add --allow-untrusted ./rust-daed-<设备>.apk
 /etc/init.d/daed enable && /etc/init.d/daed start
 # Web 面板: http://<机器IP>:2023
@@ -44,7 +44,26 @@ apk add --allow-untrusted ./rust-daed-<设备>.apk
 
 ## 📋 系统要求
 
-x86_64 / aarch64 Linux，内核 ≥ 5.8 且启用 **BTF**；root 权限；OpenWrt 25.12 需 apk-tools 2.x。
+x86_64 / aarch64 Linux，内核 ≥ 5.8 且启用 **BTF**；root 权限。
+
+dae 的 eBPF 数据面还要求内核开启 **veth**、**clsact**（`NET_SCH_INGRESS` / `NET_CLS_ACT` / `NET_CLS_BPF`），
+并需要宿主工具 `tc` / `bpftool` / `ipset`（OpenWrt 上：`apk add tc-full bpftool-minimal ip-full ipset`）。
+
+### ⚠️ 包格式兼容性（重要）
+
+OpenWrt **25.12 起使用 apk-tools 3.x**，包格式为 **apk v3**（ADB 容器；既不是 tar 也不是 gzip，用 `tar`/apk2 工具打不开是正常的）。
+
+本 Release 中现有的 `rust-daed-*.apk` 是 **apk v2 格式**，在 apk-tools 3 上安装会直接报错：
+
+```text
+ERROR: ./rust-daed-r4s.apk: v2 package format error
+```
+
+| 目标环境 | 包管理 | 可用产物 |
+|---|---|---|
+| OpenWrt 25.12（apk-tools 3） | `apk` | ❌ 现有 apk 为 v2，需等待 **v3 重打包**；可先用内置 daed 的固件 [Quan-0505/OpenWrt](https://github.com/Quan-0505/OpenWrt) |
+| Debian / Ubuntu | `dpkg` | ✅ `rust-daed-x86.deb` |
+| Alpine / apk-tools 2.x 环境 | `apk` | ✅ 现有 `rust-daed-*.apk` |
 
 ## 🔧 源码补丁（sticky-ip）
 
