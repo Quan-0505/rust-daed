@@ -49,21 +49,34 @@ x86_64 / aarch64 Linux，内核 ≥ 5.8 且启用 **BTF**；root 权限。
 dae 的 eBPF 数据面还要求内核开启 **veth**、**clsact**（`NET_SCH_INGRESS` / `NET_CLS_ACT` / `NET_CLS_BPF`），
 并需要宿主工具 `tc` / `bpftool` / `ipset`（OpenWrt 上：`apk add tc-full bpftool-minimal ip-full ipset`）。
 
-### ⚠️ 包格式兼容性（重要）
+### ⚠️ 包格式（OpenWrt 25.12 用 apk v3）
 
-OpenWrt **25.12 起使用 apk-tools 3.x**，包格式为 **apk v3**（ADB 容器；既不是 tar 也不是 gzip，用 `tar`/apk2 工具打不开是正常的）。
+OpenWrt **25.12 起使用 apk-tools 3.x**，包格式为 **apk v3**（ADB 容器：文件头为 `ADB`；既不是 tar 也不是 gzip，用 `tar`/apk2 工具打不开是正常的）。
 
-本 Release 中现有的 `rust-daed-*.apk` 是 **apk v2 格式**，在 apk-tools 3 上安装会直接报错：
+本 Release 的 `rust-daed-r2s/r3s/r4s/x86.apk` 已重打包为 **apk v3**，可直接安装：
 
-```text
-ERROR: ./rust-daed-r4s.apk: v2 package format error
+```sh
+scp rust-daed-r4s.apk root@192.168.2.1:/tmp/
+ssh root@192.168.2.1 'apk add --allow-untrusted /tmp/rust-daed-r4s.apk'
 ```
 
-| 目标环境 | 包管理 | 可用产物 |
+| 目标环境 | 包管理 | 用哪个文件 |
 |---|---|---|
-| OpenWrt 25.12（apk-tools 3） | `apk` | ❌ 现有 apk 为 v2，需等待 **v3 重打包**；可先用内置 daed 的固件 [Quan-0505/OpenWrt](https://github.com/Quan-0505/OpenWrt) |
+| OpenWrt 25.12+（apk-tools 3） | `apk` | ✅ `rust-daed-<device>.apk`（apk v3，架构 `aarch64_generic` / `x86_64`） |
+| Alpine 或 apk-tools 2.x 旧环境 | `apk` | `rust-daed-<device>-v2.apk`（保留的 v2 原件） |
 | Debian / Ubuntu | `dpkg` | ✅ `rust-daed-x86.deb` |
-| Alpine / apk-tools 2.x 环境 | `apk` | ✅ 现有 `rust-daed-*.apk` |
+
+已在真机验证（NanoPi R4S / OpenWrt 25.12.5 / apk-tools 3.0.5 / `aarch64_generic`）：
+
+```text
+(1/1) Upgrading daed (3.1.0-r2 -> 3.1.1-r1)
+  Executing daed-3.1.1-r1.post-upgrade
+OK: 144.5 MiB in 305 packages
+```
+
+重打包由仓库内 `workflow_dispatch` 流程 **Repack apk as OpenWrt 25.12 (apk v3)** 完成（用 OpenWrt 25.12 SDK 的 apk-tools 3 重新打包，v2 的脚本钩子改写成 OpenWrt 的 `postinst`/`prerm`）——升级上游二进制时重跑一次即可。
+
+> 注意：本包与 [daed-kdae](https://github.com/Quan-0505/daed-kdae)（Go 引擎版）提供相同的 `/usr/bin/daed` 与 `/etc/init.d/daed`，**两者只能装一个**，后装的会覆盖先装的。
 
 ## 🔧 源码补丁（sticky-ip）
 
