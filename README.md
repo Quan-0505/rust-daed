@@ -5,9 +5,9 @@
 **daed（DaedNext，Rust 原生）透明代理安装包 · 含 sticky-ip 增强**
 
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v3.1.1--sticky-orange.svg)](https://github.com/Quan-0505/rust-daed/releases/tag/v3.1.1-sticky)
+[![Version](https://img.shields.io/badge/version-v3.1.2-orange.svg)](https://github.com/Quan-0505/rust-daed/releases/tag/v3.1.2)
 
-基于 [DaedNext](https://github.com/ksong008/DaedNext)（Rust 版 daed）+ [DaeNext](https://github.com/ksong008/DaeNext)（Rust 原生 dae 引擎），移植 **sticky-ip** 特性。
+跟随上游主线（DaedNext/DaeNext 最新）+ **sticky-ip**。基于 [DaedNext](https://github.com/ksong008/DaedNext)（Rust 版 daed）+ [DaeNext](https://github.com/ksong008/DaeNext)（Rust 原生 dae 引擎），移植 **sticky-ip** 特性。
 
 </div>
 
@@ -21,7 +21,7 @@
 - 🔄 **reload 保留存量连接**（GenerationSwap 不断流）
 - 🔐 **boringssl** TLS 栈（含后量子密码补丁）
 
-## 📦 安装包（[v3.1.1-sticky Release](https://github.com/Quan-0505/rust-daed/releases/tag/v3.1.1-sticky)，deb + apk 统一发布）
+## 📦 安装包（[v3.1.2 Release](https://github.com/Quan-0505/rust-daed/releases/tag/v3.1.2)，deb + apk 统一发布）
 
 | 平台 / 设备 | 文件 | 架构 |
 |---|---|---|
