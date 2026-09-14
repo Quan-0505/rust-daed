@@ -1,116 +1,17 @@
-diff --git a/crates/dae-outbound/src/lib.rs b/crates/dae-outbound/src/lib.rs
-index 91b8d7a..ce53954 100644
---- a/crates/dae-outbound/src/lib.rs
-+++ b/crates/dae-outbound/src/lib.rs
-@@ -20,6 +20,7 @@ pub mod production_matrix;
- pub mod security_underlay_capability;
- pub mod shadowsocks;
- pub mod shared_transport;
+diff --git a/crates/dae-outbound-core/src/lib.rs b/crates/dae-outbound-core/src/lib.rs
+index b79fbc9..bd83ac7 100644
+--- a/crates/dae-outbound-core/src/lib.rs
++++ b/crates/dae-outbound-core/src/lib.rs
+@@ -1,3 +1,4 @@
 +pub mod sticky;
- pub mod socks5;
- pub mod source_shape_registry;
- pub mod stream_wrapper_capability;
-diff --git a/crates/dae-outbound/src/shared_transport/dataplane.rs b/crates/dae-outbound/src/shared_transport/dataplane.rs
-index 3bdaa97..a7142bf 100644
---- a/crates/dae-outbound/src/shared_transport/dataplane.rs
-+++ b/crates/dae-outbound/src/shared_transport/dataplane.rs
-@@ -65,7 +65,7 @@ pub fn http_upgrade_exchange(
-     payload: &[u8],
-     timeout: Duration,
- ) -> Result<SharedTransportLoopbackReport, OutboundError> {
--    let mut stream = TcpStream::connect(endpoint)
-+    let mut stream = crate::sticky::sticky_connect(endpoint)
-         .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
-     set_timeout(&mut stream, timeout)?;
-     let request = http_upgrade_request(options)?;
-@@ -94,7 +94,7 @@ pub fn websocket_exchange(
-     payload: &[u8],
-     timeout: Duration,
- ) -> Result<SharedTransportLoopbackReport, OutboundError> {
--    let mut stream = TcpStream::connect(endpoint)
-+    let mut stream = crate::sticky::sticky_connect(endpoint)
-         .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
-     set_timeout(&mut stream, timeout)?;
-     let request = websocket_handshake_request(options, DEFAULT_WS_KEY)?;
-@@ -124,7 +124,7 @@ pub fn simpleobfs_http_exchange(
-     payload: &[u8],
-     timeout: Duration,
- ) -> Result<SharedTransportLoopbackReport, OutboundError> {
--    let mut stream = TcpStream::connect(endpoint)
-+    let mut stream = crate::sticky::sticky_connect(endpoint)
-         .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
-     set_timeout(&mut stream, timeout)?;
-     let request = simpleobfs_http_request(options)?;
-diff --git a/crates/dae-outbound/src/shared_transport/grpc.rs b/crates/dae-outbound/src/shared_transport/grpc.rs
-index 0c921e6..e4d65bd 100644
---- a/crates/dae-outbound/src/shared_transport/grpc.rs
-+++ b/crates/dae-outbound/src/shared_transport/grpc.rs
-@@ -401,7 +401,7 @@ pub fn grpc_hunk_exchange(
-     payload: &[u8],
-     timeout: Duration,
- ) -> Result<GrpcLifecycleReport, OutboundError> {
--    let mut stream = TcpStream::connect(endpoint)
-+    let mut stream = crate::sticky::sticky_connect(endpoint)
-         .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
-     set_timeout(&stream, timeout)?;
-     stream
-diff --git a/crates/dae-outbound/src/shared_transport/meek.rs b/crates/dae-outbound/src/shared_transport/meek.rs
-index 5063bbd..7606364 100644
---- a/crates/dae-outbound/src/shared_transport/meek.rs
-+++ b/crates/dae-outbound/src/shared_transport/meek.rs
-@@ -92,7 +92,7 @@ pub fn meek_polling_exchange(
- ) -> Result<MeekRoundTripReport, OutboundError> {
-     let mut echoed_payloads = Vec::with_capacity(writes.len());
-     for body in writes {
--        let mut stream = TcpStream::connect(endpoint)
-+        let mut stream = crate::sticky::sticky_connect(endpoint)
-             .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
-         set_timeout(&stream, timeout)?;
-         stream
-diff --git a/crates/dae-outbound/src/shared_transport/mux.rs b/crates/dae-outbound/src/shared_transport/mux.rs
-index ca23f8b..7896ca8 100644
---- a/crates/dae-outbound/src/shared_transport/mux.rs
-+++ b/crates/dae-outbound/src/shared_transport/mux.rs
-@@ -277,7 +277,7 @@ pub fn mux_frame_exchange(
-     payload: &[u8],
-     timeout: Duration,
- ) -> Result<MuxLifecycleReport, OutboundError> {
--    let mut stream = TcpStream::connect(endpoint)
-+    let mut stream = crate::sticky::sticky_connect(endpoint)
-         .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
-     set_timeout(&stream, timeout)?;
-     stream
-diff --git a/crates/dae-outbound/src/shared_transport/reality.rs b/crates/dae-outbound/src/shared_transport/reality.rs
-index 56d161b..0dafde8 100644
---- a/crates/dae-outbound/src/shared_transport/reality.rs
-+++ b/crates/dae-outbound/src/shared_transport/reality.rs
-@@ -136,7 +136,7 @@ pub fn reality_mutation_exchange(
-     payload: &[u8],
-     timeout: Duration,
- ) -> Result<RealityMutationReport, OutboundError> {
--    let mut stream = TcpStream::connect(endpoint)
-+    let mut stream = crate::sticky::sticky_connect(endpoint)
-         .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
-     set_timeout(&stream, timeout)?;
-     write_reality_harness_message(&mut stream, options, payload)?;
-diff --git a/crates/dae-outbound/src/shared_transport/xhttp/http1.rs b/crates/dae-outbound/src/shared_transport/xhttp/http1.rs
-index 6a4086d..5da4c83 100644
---- a/crates/dae-outbound/src/shared_transport/xhttp/http1.rs
-+++ b/crates/dae-outbound/src/shared_transport/xhttp/http1.rs
-@@ -35,7 +35,7 @@ pub fn xhttp_packet_exchange(
-     payload: &[u8],
-     timeout: Duration,
- ) -> Result<XHttpLifecycleReport, OutboundError> {
--    let mut stream = TcpStream::connect(endpoint)
-+    let mut stream = crate::sticky::sticky_connect(endpoint)
-         .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
-     set_timeout(&stream, timeout)?;
-     let request = xhttp_packet_request(options, payload)?;
-diff --git a/crates/dae-outbound/src/sticky.rs b/crates/dae-outbound/src/sticky.rs
+ pub mod alive;
+ pub mod annotation;
+ pub mod anytls;
+diff --git a/crates/dae-outbound-core/src/sticky.rs b/crates/dae-outbound-core/src/sticky.rs
 new file mode 100644
 index 0000000..57c6fed
 --- /dev/null
-+++ b/crates/dae-outbound/src/sticky.rs
++++ b/crates/dae-outbound-core/src/sticky.rs
 @@ -0,0 +1,132 @@
 +//! Sticky IP caching for proxy server connections.
 +//!
@@ -244,3 +145,142 @@ index 0000000..57c6fed
 +        assert_eq!(split_host_port("example.com:443"), ("example.com".to_string(), "443".to_string()));
 +    }
 +}
+diff --git a/crates/dae-outbound-stream/src/grpc.rs b/crates/dae-outbound-stream/src/grpc.rs
+index 428b12d..e3d2d1d 100644
+--- a/crates/dae-outbound-stream/src/grpc.rs
++++ b/crates/dae-outbound-stream/src/grpc.rs
+@@ -370,7 +370,7 @@ pub fn grpc_hunk_exchange(
+     payload: &[u8],
+     timeout: Duration,
+ ) -> Result<GrpcLifecycleReport, OutboundError> {
+-    let mut stream = TcpStream::connect(endpoint)
++    let mut stream = dae_outbound_core::sticky::sticky_connect(endpoint)
+         .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
+     set_timeout(&stream, timeout)?;
+     stream
+diff --git a/crates/dae-outbound-stream/src/http_proxy/dataplane.rs b/crates/dae-outbound-stream/src/http_proxy/dataplane.rs
+index bf52c02..37954e2 100644
+--- a/crates/dae-outbound-stream/src/http_proxy/dataplane.rs
++++ b/crates/dae-outbound-stream/src/http_proxy/dataplane.rs
+@@ -1,5 +1,4 @@
+ use std::io::{Read, Write};
+-use std::net::TcpStream;
+ use std::time::Duration;
+ 
+ use crate::http_head::read_http_head_with_leftover;
+@@ -24,7 +23,7 @@ pub fn connect_exchange(
+     timeout: Duration,
+ ) -> Result<HttpConnectExchangeReport, OutboundError> {
+     let mut stream =
+-        TcpStream::connect(proxy).map_err(|err| OutboundError::BadHttpProxy(err.to_string()))?;
++        dae_outbound_core::sticky::sticky_connect(proxy).map_err(|err| OutboundError::BadHttpProxy(err.to_string()))?;
+     stream
+         .set_read_timeout(Some(timeout))
+         .map_err(|err| OutboundError::BadHttpProxy(err.to_string()))?;
+diff --git a/crates/dae-outbound-stream/src/meek.rs b/crates/dae-outbound-stream/src/meek.rs
+index 3de1cab..fed811a 100644
+--- a/crates/dae-outbound-stream/src/meek.rs
++++ b/crates/dae-outbound-stream/src/meek.rs
+@@ -91,7 +91,7 @@ pub fn meek_polling_exchange(
+ ) -> Result<MeekRoundTripReport, OutboundError> {
+     let mut echoed_payloads = Vec::with_capacity(writes.len());
+     for body in writes {
+-        let mut stream = TcpStream::connect(endpoint)
++        let mut stream = dae_outbound_core::sticky::sticky_connect(endpoint)
+             .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
+         set_timeout(&stream, timeout)?;
+         stream
+diff --git a/crates/dae-outbound-stream/src/mux.rs b/crates/dae-outbound-stream/src/mux.rs
+index 404030f..51cac08 100644
+--- a/crates/dae-outbound-stream/src/mux.rs
++++ b/crates/dae-outbound-stream/src/mux.rs
+@@ -277,7 +277,7 @@ pub fn mux_frame_exchange(
+     payload: &[u8],
+     timeout: Duration,
+ ) -> Result<MuxLifecycleReport, OutboundError> {
+-    let mut stream = TcpStream::connect(endpoint)
++    let mut stream = dae_outbound_core::sticky::sticky_connect(endpoint)
+         .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
+     set_timeout(&stream, timeout)?;
+     stream
+diff --git a/crates/dae-outbound-stream/src/shadowsocks/aead.rs b/crates/dae-outbound-stream/src/shadowsocks/aead.rs
+index 7306bdd..c45b65b 100644
+--- a/crates/dae-outbound-stream/src/shadowsocks/aead.rs
++++ b/crates/dae-outbound-stream/src/shadowsocks/aead.rs
+@@ -117,7 +117,7 @@ pub fn tcp_exchange(
+     timeout: Duration,
+ ) -> Result<ShadowsocksAeadTcpExchangeReport, OutboundError> {
+     let mut stream =
+-        TcpStream::connect(server).map_err(|err| OutboundError::BadShadowsocks(err.to_string()))?;
++        dae_outbound_core::sticky::sticky_connect(server).map_err(|err| OutboundError::BadShadowsocks(err.to_string()))?;
+     stream
+         .set_read_timeout(Some(timeout))
+         .map_err(|err| OutboundError::BadShadowsocks(err.to_string()))?;
+diff --git a/crates/dae-outbound-stream/src/shadowsocks/ss2022_tcp_dataplane.rs b/crates/dae-outbound-stream/src/shadowsocks/ss2022_tcp_dataplane.rs
+index 8e65362..35e0aa8 100644
+--- a/crates/dae-outbound-stream/src/shadowsocks/ss2022_tcp_dataplane.rs
++++ b/crates/dae-outbound-stream/src/shadowsocks/ss2022_tcp_dataplane.rs
+@@ -1,5 +1,4 @@
+ use std::io::{Read, Write};
+-use std::net::TcpStream;
+ use std::time::{Duration, SystemTime, UNIX_EPOCH};
+ 
+ use aes::cipher::{BlockEncrypt, KeyInit as BlockKeyInit};
+diff --git a/crates/dae-outbound-stream/src/shadowsocks/ss2022_tcp_dataplane/exchanges.rs b/crates/dae-outbound-stream/src/shadowsocks/ss2022_tcp_dataplane/exchanges.rs
+index 76dc5ad..a76e71e 100644
+--- a/crates/dae-outbound-stream/src/shadowsocks/ss2022_tcp_dataplane/exchanges.rs
++++ b/crates/dae-outbound-stream/src/shadowsocks/ss2022_tcp_dataplane/exchanges.rs
+@@ -9,7 +9,7 @@ pub fn tcp_exchange(
+     timeout: Duration,
+ ) -> Result<Ss2022TcpExchangeReport, OutboundError> {
+     let mut stream =
+-        TcpStream::connect(server).map_err(|err| OutboundError::BadShadowsocks(err.to_string()))?;
++        dae_outbound_core::sticky::sticky_connect(server).map_err(|err| OutboundError::BadShadowsocks(err.to_string()))?;
+     stream
+         .set_read_timeout(Some(timeout))
+         .map_err(|err| OutboundError::BadShadowsocks(err.to_string()))?;
+diff --git a/crates/dae-outbound-stream/src/shared_transport/reality.rs b/crates/dae-outbound-stream/src/shared_transport/reality.rs
+index 56d161b..361d44d 100644
+--- a/crates/dae-outbound-stream/src/shared_transport/reality.rs
++++ b/crates/dae-outbound-stream/src/shared_transport/reality.rs
+@@ -136,7 +136,7 @@ pub fn reality_mutation_exchange(
+     payload: &[u8],
+     timeout: Duration,
+ ) -> Result<RealityMutationReport, OutboundError> {
+-    let mut stream = TcpStream::connect(endpoint)
++    let mut stream = dae_outbound_core::sticky::sticky_connect(endpoint)
+         .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
+     set_timeout(&stream, timeout)?;
+     write_reality_harness_message(&mut stream, options, payload)?;
+diff --git a/crates/dae-outbound-stream/src/socks5/dataplane.rs b/crates/dae-outbound-stream/src/socks5/dataplane.rs
+index f8ae8b8..98449d5 100644
+--- a/crates/dae-outbound-stream/src/socks5/dataplane.rs
++++ b/crates/dae-outbound-stream/src/socks5/dataplane.rs
+@@ -1,5 +1,4 @@
+ use std::io::{Read, Write};
+-use std::net::TcpStream;
+ use std::time::Duration;
+ 
+ use dae_outbound_core::error::OutboundError;
+@@ -37,7 +36,7 @@ pub fn tcp_connect_exchange(
+     timeout: Duration,
+ ) -> Result<Socks5TcpExchangeReport, OutboundError> {
+     let mut stream =
+-        TcpStream::connect(proxy).map_err(|err| OutboundError::BadSocks5Reply(err.to_string()))?;
++        dae_outbound_core::sticky::sticky_connect(proxy).map_err(|err| OutboundError::BadSocks5Reply(err.to_string()))?;
+     stream
+         .set_read_timeout(Some(timeout))
+         .map_err(|err| OutboundError::BadSocks5Reply(err.to_string()))?;
+diff --git a/crates/dae-outbound-stream/src/xhttp/http1.rs b/crates/dae-outbound-stream/src/xhttp/http1.rs
+index fad2cd1..a264437 100644
+--- a/crates/dae-outbound-stream/src/xhttp/http1.rs
++++ b/crates/dae-outbound-stream/src/xhttp/http1.rs
+@@ -35,7 +35,7 @@ pub fn xhttp_packet_exchange(
+     payload: &[u8],
+     timeout: Duration,
+ ) -> Result<XHttpLifecycleReport, OutboundError> {
+-    let mut stream = TcpStream::connect(endpoint)
++    let mut stream = dae_outbound_core::sticky::sticky_connect(endpoint)
+         .map_err(|err| OutboundError::BadSharedTransport(err.to_string()))?;
+     set_timeout(&stream, timeout)?;
+     let request = xhttp_packet_request(options, payload)?;
