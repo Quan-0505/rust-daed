@@ -11,6 +11,8 @@ Tracks the upstream mainline (latest DaedNext/DaeNext) + deep **sticky-ip** cust
 
 </div>
 
+**English** &nbsp;|&nbsp; **[简体中文](./README.md)**
+
 ---
 
 ## ✨ Features
