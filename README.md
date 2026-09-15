@@ -35,37 +35,14 @@
 | **DNS 引擎与 RFC 规范强化** | • 严格在所有分发路径执行 `ipversion_prefer`（IPv4 / IPv6 偏好策略），防止非预期 IPv6 路由绕行<br>• 完整实现 **RFC 2308 否定缓存**（Negative Caching）规范、全消息 TTL 与 CNAME-only NODATA 规范分类<br>• 完善 DoQ (DNS-over-QUIC) / DoH 多路复用连接异步回收机制，规避连接资源泄露 |
 | **用户态 resident 与内存架构** | • 专为嵌入式路由器环境优化的零拷贝调度设计，大幅削减跨 CPU 核心上下文切换的锁竞争<br>• 内存驻留体积（Resident Set Size）显著低于同类实现，长期高负载运行不发生碎片化膨胀 |
 
-## 📦 安装包选型与发布资产列表 (Release Assets)
+## 📦 安装包选型与发布资产 (Release Assets)
 
-参考 [daed-kdae Releases](https://github.com/Quan-0505/daed-kdae/releases/tag/v2.2.2-kdae) 统一发行规范，提供针对现代与老旧 x86_64 CPU，以及各版本 OpenWrt 硬件架构的全量发行资产（Assets）：
+本项目为全架构提供预编译二进制安装包，包含现代/通用 x86_64 CPU 与各类软路由设备（如 NanoPi R2S/R3S/R4S、x86_64）：
+- **Debian / Ubuntu / PVE**：提供 `deb` 安装包（内置 systemd 单元文件，支持 SSE4.2 通用版与 AVX2 优化版）。
+- **OpenWrt 25.12+**：提供标准 `apk v3` 安装包（基于 apk-tools 3.x / ADB 容器格式）。
+- **OpenWrt 24.x / 23.x / Alpine**：提供传统 `apk v2` 安装包（传统 tar 格式）。
 
-### 🎯 硬件与平台选型矩阵
-
-| 平台 / 设备 | OpenWrt 25.12+ (apk v3) | OpenWrt 24.x/23.x/Alpine (apk v2) | Debian / Ubuntu (deb) | 架构与指令集 |
-|---|---|---|---|---|
-| **Debian / Ubuntu x86_64 (SSE4.2)** | - | - | `rust-daed_3.1.2-linux-x86_64_v2_sse.deb` | x86_64 (老旧 CPU 通用) |
-| **Debian / Ubuntu x86_64 (AVX2)** | - | - | `rust-daed_3.1.2-linux-x86_64_v3_avx2.deb` | x86_64 (Intel 4代+ / AMD Zen+) |
-| **OpenWrt x86_64 软路由** | `rust-daed_3.1.2-x86_64-v3.apk` | `rust-daed_3.1.2-x86_64-v2.apk` | - | x86_64 |
-| **NanoPi R4S** | `rust-daed_3.1.2-R4S-v3.apk` | `rust-daed_3.1.2-R4S-v2.apk` | - | aarch64_generic (RK3399) |
-| **NanoPi R3S** | `rust-daed_3.1.2-R3S-v3.apk` | `rust-daed_3.1.2-R3S-v2.apk` | - | aarch64_generic (RK3566) |
-| **NanoPi R2S** | `rust-daed_3.1.2-R2S-v3.apk` | `rust-daed_3.1.2-R2S-v2.apk` | - | aarch64_generic (RK3328) |
-
-### 📋 全量发布资产清单（Assets 10）
-
-| 文件名 (Asset Name) | 格式 | 大小 | SHA-256 校验和 (Checksum) |
-|---|---|---|---|
-| `rust-daed_3.1.2-linux-x86_64_v2_sse.deb` | deb | 24.7 MB | `e87f2a9e2523f605e687c74a9f799a3e734383adaa208ed6e5ea5d89116545a3` |
-| `rust-daed_3.1.2-linux-x86_64_v3_avx2.deb` | deb | 24.7 MB | `b0808d1a49a4fd61335f10a175c894fb9cacc4b896b692d6da1ad47e7fa3b0bd` |
-| `rust-daed_3.1.2-x86_64-v3.apk` | apk v3 | 23.7 MB | `299966c7755fb79bf66a823db5ebfc2a54cfb7077086e70ce538fea795528ffb` |
-| `rust-daed_3.1.2-x86_64-v2.apk` | apk v2 | 23.7 MB | `7333add1aacb13f45ccf0bb4b0c707d8fbd8cae815473e6ea30cea3cf356c627` |
-| `rust-daed_3.1.2-R4S-v3.apk` | apk v3 | 23.7 MB | `aa464c460730dab21499c126a8c479a9138338e2110eb47b7772c684db8a480d` |
-| `rust-daed_3.1.2-R4S-v2.apk` | apk v2 | 23.7 MB | `8ccfac5d3764116c804d5922f2f9e714fe46615a46364961bb8d04d4428f8112` |
-| `rust-daed_3.1.2-R3S-v3.apk` | apk v3 | 23.7 MB | `1224c687ac35cd8f17912d315496298fd7cba1c9671b0575457352cb198cdc42` |
-| `rust-daed_3.1.2-R3S-v2.apk` | apk v2 | 23.7 MB | `0ca526a033fe2ae668e2357ea346d524928774e415466566bd2aaddd72dec9ec` |
-| `rust-daed_3.1.2-R2S-v3.apk` | apk v3 | 23.7 MB | `68416eaa3f68938ff992d446e3f0c4a9c7b618d302982cfa6d6ba9bd2ef6974d` |
-| `rust-daed_3.1.2-R2S-v2.apk` | apk v2 | 23.7 MB | `18ef4613e32863d7ca4b9dae18daf694a3b04b3a8ae04782ac96d3b09086da17` |
-| `Source code (zip)` | zip | - | - |
-| `Source code (tar.gz)` | tar.gz | - | - |
+可直接前往 [Releases 页面](https://github.com/Quan-0505/rust-daed/releases) 获取各架构独立编译产物。
 
 ## 🚀 快速开始
 
