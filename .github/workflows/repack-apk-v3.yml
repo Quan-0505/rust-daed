@@ -2,16 +2,13 @@ name: Repack apk as OpenWrt 25.12 (apk v3)
 
 # 背景：OpenWrt 25.12 起使用 apk-tools 3.x，包格式为 apk v3（ADB 容器）。
 # 本流程支持自动触发（发布 Release 或推送 Tag 时自动运行）与手动触发 (workflow_dispatch)：
-#   - 兼容支持新命名规范：rust-daed_<version>-<device>-v3.apk 与 rust-daed_<version>-<device>-v2.apk
-#   - 兼容旧命名规范：rust-daed-<device>.apk
+#   - 自动生成新规范命名：rust-daed_<version>-<device>-v3.apk 与 rust-daed_<version>-<device>-v2.apk
+#   - 同时兼容发布旧命名：rust-daed-<device>.apk
 #   - 架构统一为 aarch64_generic / x86_64（rockchip/armv8 与 x86/64 SDK 的 ARCH）
 
 on:
   release:
     types: [published, created]
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
       tag:
@@ -31,7 +28,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: repack-apk-v3-${{ github.ref }}
+  group: repack-apk-v3
   cancel-in-progress: false
 
 jobs:
@@ -66,20 +63,17 @@ jobs:
         id: meta
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG="${{ inputs.tag }}"
-            VER="${{ inputs.version }}"
-            REL="${{ inputs.release }}"
-          else
-            TAG="${{ github.event.release.tag_name || github.ref_name }}"
+          TAG="${{ github.event.inputs.tag || github.event.release.tag_name || 'v3.1.2' }}"
+          VER="${{ github.event.inputs.version || '' }}"
+          if [ -z "$VER" ]; then
             VER="${TAG#v}"
             VER="${VER%%-*}"
-            REL="25.12"
           fi
+          REL="${{ github.event.inputs.release || '25.12' }}"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VER" >> "$GITHUB_OUTPUT"
           echo "release=$REL" >> "$GITHUB_OUTPUT"
-          echo "Resolved for ${{ github.event_name }}: tag=$TAG, version=$VER, release=$REL"
+          echo "Triggered by ${{ github.event_name }}: tag=$TAG, version=$VER, release=$REL"
 
       - name: Install tooling
         run: |
