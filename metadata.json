@@ -1,0 +1,6 @@
+{
+  "name": "Rust Daed",
+  "description": "daed (DaedNext Rust) transparent proxy management dashboard with sticky-ip engine, node DNS drift prevention, and OpenWrt package tools",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
