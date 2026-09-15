@@ -49,23 +49,23 @@ You can go straight to the [Releases page](https://github.com/Quan-0505/rust-dae
 ## 🚀 Quick start
 
 ```sh
-# Debian / Ubuntu (标准 amd64 SSE4.2 通用 / AVX2 优化)
+# Debian / Ubuntu (standard amd64 SSE4.2 generic / AVX2 optimized)
 sudo dpkg -i rust-daed_3.1.2-linux-x86_64_v2_sse.deb
-# 或针对现代 CPU 安装 AVX2 版本：
+# or install the AVX2 build for modern CPUs:
 # sudo dpkg -i rust-daed_3.1.2-linux-x86_64_v3_avx2.deb
 sudo systemctl enable --now daed
 
-# OpenWrt 25.12+（apk v3 / apk-tools 3.x）
-apk add --allow-untrusted ./rust-daed_3.1.2-<设备>-v3.apk
+# OpenWrt 25.12+ (apk v3 / apk-tools 3.x)
+apk add --allow-untrusted ./rust-daed_3.1.2-<device>-v3.apk
 
-# OpenWrt 24.x / 23.x / Alpine（apk v2 传统 tar 包）
-apk add --allow-untrusted ./rust-daed_3.1.2-<设备>-v2.apk
+# OpenWrt 24.x / 23.x / Alpine (apk v2 legacy tar package)
+apk add --allow-untrusted ./rust-daed_3.1.2-<device>-v2.apk
 
-# 启用并启动服务
+# enable and start the service
 /etc/init.d/daed enable && /etc/init.d/daed start
 
-# 访问 Web 管理后台
-http://<路由器IP>:2023
+# open the Web admin panel
+http://<router-IP>:2023
 ```
 
 ## 📋 System requirements
@@ -121,7 +121,7 @@ Commands to apply and verify:
 
 ```sh
 cd DaeNext && git apply patches/sticky-ip-full.patch
-cargo test -p dae-outbound sticky::tests   # 4/4 测试通过
+cargo test -p dae-outbound sticky::tests   # 4/4 tests pass
 ```
 
 ## 📂 Repository contents
