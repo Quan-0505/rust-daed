@@ -263,7 +263,7 @@ jobs:
           path: out/
           if-no-files-found: error
 
-      - name: Publish v3 as the canonical asset and keep the v2 copy
+      - name: Publish new canonical release assets and purge legacy format assets
         run: |
           set -euo pipefail
           asset="${{ matrix.asset }}"
@@ -272,11 +272,16 @@ jobs:
           v2_spec="rust-daed_${TARGET_VERSION}-${dev}-v2.apk"
           v3_spec="rust-daed_${TARGET_VERSION}-${dev}-v3.apk"
 
-          # 每个机型一份 v2 备份，避免多个矩阵任务互相覆盖成同一个 v2.apk
-          cp v2.apk "${base}-v2.apk"
+          # 规范命名包
           cp v2.apk "$v2_spec"
           cp "out/$asset" "$v3_spec"
 
-          gh release upload "$TARGET_TAG" "${base}-v2.apk" "$v2_spec" --clobber
-          gh release upload "$TARGET_TAG" "out/$asset" "$v3_spec" --clobber
+          # 仅上传新规范命名的包
+          gh release upload "$TARGET_TAG" "$v2_spec" "$v3_spec" --clobber
+
+          # 清理旧命名格式资产（如 rust-daed-r2s.apk / rust-daed-r2s-v2.apk 等）
+          gh release delete-asset "$TARGET_TAG" "${base}-v2.apk" -y 2>/dev/null || true
+          gh release delete-asset "$TARGET_TAG" "$asset" -y 2>/dev/null || true
+
+          echo "已成功同步 $v3_spec 与 $v2_spec，并清除旧命名格式"
           gh release view "$TARGET_TAG" --json assets --jq '.assets[] | "\(.name)\t\(.size)"'
