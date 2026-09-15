@@ -7,6 +7,8 @@
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-v3.1.2-orange.svg)](https://github.com/Quan-0505/rust-daed/releases/tag/v3.1.2)
 
+**[简体中文](./README.md)** &nbsp;|&nbsp; **[English](./README.en.md)**
+
 跟随上游主线（DaedNext/DaeNext 最新）+ **sticky-ip** 深度定制。基于 [DaedNext](https://github.com/ksong008/DaedNext)（Rust 版 daed Web）+ [DaeNext](https://github.com/ksong008/DaeNext)（Rust 原生 dae 引擎）+ [Aya](https://github.com/aya-rs/aya)（纯 Rust eBPF），移植并集成了 **sticky-ip** 智能连接锁定与防 DNS 漂移机制。
 
 </div>
