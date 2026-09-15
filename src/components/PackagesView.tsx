@@ -94,7 +94,7 @@ export const PackagesView: React.FC = () => {
               ) : (
                 <Hash className="w-3.5 h-3.5 text-orange-400" />
               )}
-              <span>{copiedId === 'all-checksums' ? '已复制 checksums.txt' : '复制 checksums'}</span>
+              <span>{copiedId === 'all-checksums' ? '已复制 SHA256' : '复制 SHA256 校验列表'}</span>
             </button>
 
             <a
@@ -111,79 +111,149 @@ export const PackagesView: React.FC = () => {
 
         {/* Release Notes Body */}
         <div className="space-y-4 text-xs text-slate-300 leading-relaxed">
-          <p>
-            <strong>Rust 原生版 daed（DaedNext Rust 内核 v3.1.2 + 现代 WebUI :2023）</strong>透明代理 daemon + eBPF / 路由重定向 + Sticky-IP 状态管理。
-            已提供全架构独立发行的二进制安装包并预生成 SHA256 校验。
-          </p>
+          <div className="p-3.5 rounded-lg bg-slate-950/80 border border-slate-800 space-y-2">
+            <div className="flex items-center gap-2 text-slate-200 font-semibold">
+              <span className="text-orange-400 font-mono">README.md</span>
+              <span>•</span>
+              <span>daed（DaedNext，Rust 原生）一体式透明代理安装包 · 含 sticky-ip 增强</span>
+            </div>
+            <p className="text-slate-400">
+              跟随上游主线（DaedNext/DaeNext 最新，218 commits 更新）+ <strong className="text-orange-300">sticky-ip</strong> 深度定制。基于 DaedNext（Rust 版 daed Web）+ DaeNext（Rust 原生 dae 引擎）+ Aya（纯 Rust eBPF），移植并集成了 sticky-ip 智能连接锁定与防 DNS 漂移机制。
+            </p>
+          </div>
+
+          {/* Upstream & Sticky-IP updates */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="p-3 rounded-lg bg-slate-950 border border-slate-800/80 space-y-1.5">
+              <div className="font-semibold text-emerald-400 flex items-center gap-1.5">
+                <span>⚡ 上游核心 218 commits 同步</span>
+              </div>
+              <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-400">
+                <li>内存管理重构：allocator worker flush、系统分配器主动 trim</li>
+                <li>UDP/TCP 主动回收：空闲缓冲回收、会话准入限流保护</li>
+                <li>协议修复：SSR SS2022 线格式、AnyTLS 认证/padding、Juicity 隔离</li>
+                <li>关停修复：协议 owner 快速取消与 shutdown 等待者唤醒</li>
+              </ul>
+            </div>
+
+            <div className="p-3 rounded-lg bg-slate-950 border border-slate-800/80 space-y-1.5">
+              <div className="font-semibold text-orange-400 flex items-center gap-1.5">
+                <span>📌 sticky-ip 深度适配新架构</span>
+              </div>
+              <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-400">
+                <li>适配上游拆出的 dae-outbound-stream / dae-outbound-core 架构</li>
+                <li>sticky 状态模块移至底层 core，接入 9 处出站传输建连点</li>
+                <li>TTL 内智能锁定节点首选 IP，彻底避免 CDN 调度与 DNS 漂移导致的频繁重连</li>
+                <li>4 项单元测试（并发锁定、TTL 过期、故障降级、自愈重置）全部通过</li>
+              </ul>
+            </div>
+          </div>
 
           {/* Guidelines Table */}
           <div className="space-y-2">
             <h3 className="font-bold text-slate-200 flex items-center gap-1.5 text-xs">
-              <span>📦 安装包选型指南</span>
-              <span className="text-[11px] font-normal text-slate-400">（本版本提供针对 OpenWrt 25.12 apk v3、传统 OpenWrt apk v2 以及 Debian/Ubuntu deb 专用安装包）</span>
+              <span>🎯 硬件与平台选型矩阵（参考 daed-kdae 统一发行规范）</span>
             </h3>
             <div className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-950">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-900 text-slate-400 font-mono text-[11px] border-b border-slate-800">
                   <tr>
-                    <th className="py-2.5 px-3">适用环境</th>
-                    <th className="py-2.5 px-3">包格式规范</th>
-                    <th className="py-2.5 px-3">对应安装包文件</th>
-                    <th className="py-2.5 px-3">安装命令示例</th>
+                    <th className="py-2.5 px-3">平台 / 设备</th>
+                    <th className="py-2.5 px-3">OpenWrt 25.12+ (apk v3)</th>
+                    <th className="py-2.5 px-3">OpenWrt 24.x/23.x/Alpine (apk v2)</th>
+                    <th className="py-2.5 px-3">Debian / Ubuntu (deb)</th>
+                    <th className="py-2.5 px-3">架构与指令集</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 font-mono text-[11px]">
                   <tr className="hover:bg-slate-900/40">
                     <td className="py-2.5 px-3 font-sans font-semibold text-slate-200">
-                      Debian / Ubuntu / PVE
+                      Debian / Ubuntu x86_64 (SSE4.2)
                     </td>
-                    <td className="py-2.5 px-3 text-blue-400">
-                      deb（systemd 单元）
-                    </td>
-                    <td className="py-2.5 px-3 text-slate-300">
-                      <div>rust-daed_3.1.2-linux-x86_64_v2_sse.deb</div>
-                      <div>rust-daed_3.1.2-linux-x86_64_v3_avx2.deb</div>
-                    </td>
-                    <td className="py-2.5 px-3 text-cyan-300">
-                      <code>sudo dpkg -i ./rust-daed_3.1.2-linux-x86_64_*.deb</code>
-                    </td>
+                    <td className="py-2.5 px-3 text-slate-500">-</td>
+                    <td className="py-2.5 px-3 text-slate-500">-</td>
+                    <td className="py-2.5 px-3 text-blue-400">rust-daed_3.1.2-linux-x86_64_v2_sse.deb</td>
+                    <td className="py-2.5 px-3 text-slate-400 font-sans">x86_64 (老旧 CPU 通用)</td>
                   </tr>
                   <tr className="hover:bg-slate-900/40">
                     <td className="py-2.5 px-3 font-sans font-semibold text-slate-200">
-                      OpenWrt 25.12+
+                      Debian / Ubuntu x86_64 (AVX2)
                     </td>
-                    <td className="py-2.5 px-3 text-orange-400">
-                      apk v3（ADB 容器）
-                    </td>
-                    <td className="py-2.5 px-3 text-slate-300">
-                      <div>rust-daed_3.1.2-R2S-v3.apk</div>
-                      <div>rust-daed_3.1.2-R3S-v3.apk</div>
-                      <div>rust-daed_3.1.2-R4S-v3.apk</div>
-                      <div>rust-daed_3.1.2-x86_64-v3.apk</div>
-                    </td>
-                    <td className="py-2.5 px-3 text-cyan-300">
-                      <code>apk add --allow-untrusted ./rust-daed_3.1.2-&lt;device&gt;-v3.apk</code>
-                    </td>
+                    <td className="py-2.5 px-3 text-slate-500">-</td>
+                    <td className="py-2.5 px-3 text-slate-500">-</td>
+                    <td className="py-2.5 px-3 text-blue-400">rust-daed_3.1.2-linux-x86_64_v3_avx2.deb</td>
+                    <td className="py-2.5 px-3 text-slate-400 font-sans">x86_64 (Intel 4代+ / AMD Zen+)</td>
                   </tr>
                   <tr className="hover:bg-slate-900/40">
                     <td className="py-2.5 px-3 font-sans font-semibold text-slate-200">
-                      OpenWrt 24.x / 23.x / Alpine
+                      OpenWrt x86_64 软路由
                     </td>
-                    <td className="py-2.5 px-3 text-amber-400">
-                      apk v2（传统 tar 包）
+                    <td className="py-2.5 px-3 text-orange-400">rust-daed_3.1.2-x86_64-v3.apk</td>
+                    <td className="py-2.5 px-3 text-amber-400">rust-daed_3.1.2-x86_64-v2.apk</td>
+                    <td className="py-2.5 px-3 text-slate-500">-</td>
+                    <td className="py-2.5 px-3 text-slate-400">x86_64</td>
+                  </tr>
+                  <tr className="hover:bg-slate-900/40">
+                    <td className="py-2.5 px-3 font-sans font-semibold text-slate-200">
+                      NanoPi R4S
                     </td>
-                    <td className="py-2.5 px-3 text-slate-300">
-                      <div>rust-daed_3.1.2-R2S-v2.apk</div>
-                      <div>rust-daed_3.1.2-R3S-v2.apk</div>
-                      <div>rust-daed_3.1.2-R4S-v2.apk</div>
-                      <div>rust-daed_3.1.2-x86_64-v2.apk</div>
+                    <td className="py-2.5 px-3 text-orange-400">rust-daed_3.1.2-R4S-v3.apk</td>
+                    <td className="py-2.5 px-3 text-amber-400">rust-daed_3.1.2-R4S-v2.apk</td>
+                    <td className="py-2.5 px-3 text-slate-500">-</td>
+                    <td className="py-2.5 px-3 text-slate-400 font-sans">aarch64_generic (RK3399)</td>
+                  </tr>
+                  <tr className="hover:bg-slate-900/40">
+                    <td className="py-2.5 px-3 font-sans font-semibold text-slate-200">
+                      NanoPi R3S
                     </td>
-                    <td className="py-2.5 px-3 text-cyan-300">
-                      <code>apk add --allow-untrusted ./rust-daed_3.1.2-&lt;device&gt;-v2.apk</code>
+                    <td className="py-2.5 px-3 text-orange-400">rust-daed_3.1.2-R3S-v3.apk</td>
+                    <td className="py-2.5 px-3 text-amber-400">rust-daed_3.1.2-R3S-v2.apk</td>
+                    <td className="py-2.5 px-3 text-slate-500">-</td>
+                    <td className="py-2.5 px-3 text-slate-400 font-sans">aarch64_generic (RK3566)</td>
+                  </tr>
+                  <tr className="hover:bg-slate-900/40">
+                    <td className="py-2.5 px-3 font-sans font-semibold text-slate-200">
+                      NanoPi R2S
                     </td>
+                    <td className="py-2.5 px-3 text-orange-400">rust-daed_3.1.2-R2S-v3.apk</td>
+                    <td className="py-2.5 px-3 text-amber-400">rust-daed_3.1.2-R2S-v2.apk</td>
+                    <td className="py-2.5 px-3 text-slate-500">-</td>
+                    <td className="py-2.5 px-3 text-slate-400 font-sans">aarch64_generic (RK3328)</td>
                   </tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+
+          {/* Quick Install */}
+          <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
+            <div className="font-semibold text-slate-200 flex items-center gap-1.5">
+              <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+              <span>🚀 快速开始与安装命令</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 font-mono text-[11px]">
+              <div className="p-2.5 rounded bg-slate-900/70 border border-slate-800 space-y-1">
+                <div className="text-blue-400 font-semibold font-sans">Debian / Ubuntu (deb)</div>
+                <div className="text-slate-400">sudo dpkg -i rust-daed_3.1.2-linux-x86_64_v2_sse.deb</div>
+                <div className="text-slate-500"># 或 AVX2: rust-daed_3.1.2-linux-x86_64_v3_avx2.deb</div>
+                <div className="text-cyan-300">sudo systemctl enable --now daed</div>
+              </div>
+              <div className="p-2.5 rounded bg-slate-900/70 border border-slate-800 space-y-1">
+                <div className="text-orange-400 font-semibold font-sans">OpenWrt 25.12+ (apk v3)</div>
+                <div className="text-slate-400">apk add --allow-untrusted ./rust-daed_3.1.2-&lt;device&gt;-v3.apk</div>
+                <div className="text-cyan-300">/etc/init.d/daed enable && /etc/init.d/daed start</div>
+              </div>
+              <div className="p-2.5 rounded bg-slate-900/70 border border-slate-800 space-y-1">
+                <div className="text-amber-400 font-semibold font-sans">OpenWrt 24.x/23.x (apk v2)</div>
+                <div className="text-slate-400">apk add --allow-untrusted ./rust-daed_3.1.2-&lt;device&gt;-v2.apk</div>
+                <div className="text-cyan-300">/etc/init.d/daed enable && /etc/init.d/daed start</div>
+              </div>
+            </div>
+            <div className="text-[11px] text-slate-400 flex items-center gap-2 pt-1">
+              <span>Web 面板地址：</span>
+              <code className="text-amber-300 font-mono">http://&lt;机器IP&gt;:2023</code>
+              <span className="text-slate-600">|</span>
+              <span className="text-slate-500">内核需 ≥ 5.8 且开启 BTF (`CONFIG_DEBUG_INFO_BTF=y`)</span>
             </div>
           </div>
         </div>
