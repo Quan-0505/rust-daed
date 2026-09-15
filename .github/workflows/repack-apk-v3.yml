@@ -1,28 +1,22 @@
 name: Repack apk as OpenWrt 25.12 (apk v3)
 
-# 背景：OpenWrt 25.12 起使用 apk-tools 3.x，包格式为 apk v3（ADB 容器）。
-# 本流程支持自动触发（发布 Release 或推送 Tag 时自动运行）与手动触发 (workflow_dispatch)：
-#   - 自动生成新规范命名：rust-daed_<version>-<device>-v3.apk 与 rust-daed_<version>-<device>-v2.apk
-#   - 同时兼容发布旧命名：rust-daed-<device>.apk
-#   - 架构统一为 aarch64_generic / x86_64（rockchip/armv8 与 x86/64 SDK 的 ARCH）
-
 on:
   release:
     types: [published, created]
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (如 v3.1.2)'
+        description: "Release tag (如 v3.1.2)"
         required: true
-        default: 'v3.1.2'
+        default: "v3.1.2"
       version:
-        description: '打包版本号 (PKG_VERSION)'
+        description: "打包版本号 (PKG_VERSION)"
         required: true
-        default: '3.1.2'
+        default: "3.1.2"
       release:
-        description: '使用的 OpenWrt 稳定版分支'
+        description: "使用的 OpenWrt 稳定版分支"
         required: true
-        default: '25.12'
+        default: "25.12"
 
 permissions:
   contents: write
@@ -63,13 +57,13 @@ jobs:
         id: meta
         run: |
           set -euo pipefail
-          TAG="${{ github.event.inputs.tag || github.event.release.tag_name || 'v3.1.2' }}"
-          VER="${{ github.event.inputs.version || '' }}"
+          TAG="${{ github.event.inputs.tag || github.event.release.tag_name || \"v3.1.2\" }}"
+          VER="${{ github.event.inputs.version || \"\" }}"
           if [ -z "$VER" ]; then
             VER="${TAG#v}"
             VER="${VER%%-*}"
           fi
-          REL="${{ github.event.inputs.release || '25.12' }}"
+          REL="${{ github.event.inputs.release || \"25.12\" }}"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VER" >> "$GITHUB_OUTPUT"
           echo "release=$REL" >> "$GITHUB_OUTPUT"
@@ -85,13 +79,11 @@ jobs:
         run: |
           set -euo pipefail
           rel_branch="${{ steps.meta.outputs.release }}"
-          rel=$(curl -fLsS "https://downloads.openwrt.org/releases/" \
-            | grep -oE "href=\"${rel_branch}\.[0-9]+/\"" | cut -d '"' -f2 | tr -d / | sort -Vu | tail -1)
+          rel=$(curl -fLsS "https://downloads.openwrt.org/releases/" | grep -oE "href=\"${rel_branch}\\.[0-9]+/\"" | cut -d \x27"\x27 -f2 | tr -d / | sort -Vu | tail -1)
           test -n "$rel"
           echo "OpenWrt release: $rel"
           tgt="${{ matrix.sdk_target }}"
-          sdk=$(curl -fLsS "https://downloads.openwrt.org/releases/${rel}/targets/${tgt}/" \
-            | grep -oE 'openwrt-sdk-[^"<]+\.tar\.zst' | head -1)
+          sdk=$(curl -fLsS "https://downloads.openwrt.org/releases/${rel}/targets/${tgt}/" | grep -oE \x27openwrt-sdk-[^"<]+\\.tar\\.zst\x27 | head -1)
           test -n "$sdk"
           echo "SDK: $sdk"
           curl -fLsS --retry 3 -o sdk.tar.zst "https://downloads.openwrt.org/releases/${rel}/targets/${tgt}/${sdk}"
@@ -108,35 +100,29 @@ jobs:
           tag="${{ steps.meta.outputs.tag }}"
           ver="${{ steps.meta.outputs.version }}"
           dev="${{ matrix.device }}"
-          
           v2_name="rust-daed_${ver}-${dev}-v2.apk"
           v3_name="rust-daed_${ver}-${dev}-v3.apk"
           legacy_name="${{ matrix.legacy_name }}"
-
           echo "Searching payload for $dev in release $tag..."
           src=""
-          if gh release view "$tag" --json assets --jq '.assets[].name' | grep -qx "$v2_name"; then
+          if gh release view "$tag" --json assets --jq \x27.assets[].name\x27 | grep -qx "$v2_name"; then
             echo "Found $v2_name"
             src="$v2_name"
-          elif gh release view "$tag" --json assets --jq '.assets[].name' | grep -qx "$legacy_name"; then
+          elif gh release view "$tag" --json assets --jq \x27.assets[].name\x27 | grep -qx "$legacy_name"; then
             echo "Found legacy name: $legacy_name"
             src="$legacy_name"
-          elif gh release view "$tag" --json assets --jq '.assets[].name' | grep -qx "$v3_name"; then
+          elif gh release view "$tag" --json assets --jq \x27.assets[].name\x27 | grep -qx "$v3_name"; then
             echo "Found $v3_name"
             src="$v3_name"
           fi
-
           if [ -z "$src" ]; then
             echo "::error::未找到 $dev 的可用包资产，跳过"
             exit 1
           fi
-
           echo "使用资产源: $src"
           gh release download "$tag" -p "$src" -O source.apk --clobber
-          
-          magic=$(head -c 4 source.apk | od -An -tx1 | tr -d ' \n')
+          magic=$(head -c 4 source.apk | od -An -tx1 | tr -d \x27 \\n\x27)
           echo "source magic: $magic"
-          
           if [ "$magic" = "41444264" ]; then
             echo "源已是 apk v3（ADB 容器）"
             echo "SOURCE_ALREADY_V3=1" >> "$GITHUB_ENV"
@@ -144,20 +130,20 @@ jobs:
           else
             echo "SOURCE_ALREADY_V3=0" >> "$GITHUB_ENV"
             cp source.apk out_v2.apk
-            python3 - <<'PY'
+            python3 - <<\x27PY\x27
 import tarfile, os, shutil
-os.makedirs('prebuilt', exist_ok=True)
-with tarfile.open('out_v2.apk', 'r:*') as tf:
-    tf.extractall('prebuilt')
-for name in os.listdir('prebuilt'):
-    if name.startswith('.') and name not in ('.', '..'):
-        p = os.path.join('prebuilt', name)
+os.makedirs("prebuilt", exist_ok=True)
+with tarfile.open("out_v2.apk", "r:*") as tf:
+    tf.extractall("prebuilt")
+for name in os.listdir("prebuilt"):
+    if name.startswith(".") and name not in (".", ".."):
+        p = os.path.join("prebuilt", name)
         shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
 PY
           fi
 
       - name: Build apk v3 with OpenWrt SDK
-        if: env.SOURCE_ALREADY_V3 != '1'
+        if: env.SOURCE_ALREADY_V3 != \x271\x27
         run: |
           set -euo pipefail
           sdkdir=$(cat sdkdir)
@@ -182,16 +168,16 @@ define Package/daed/postinst
 [ -n "\$\${IPKG_INSTROOT:-}" ] && exit 0
 mkdir -p /etc/daed /tmp/log/daed
 if [ -x /etc/init.d/daed ]; then
-	/etc/init.d/daed enable 2>/dev/null || true
-	/etc/init.d/daed restart 2>/dev/null || true
+\t/etc/init.d/daed enable 2>/dev/null || true
+\t/etc/init.d/daed restart 2>/dev/null || true
 fi
 exit 0
 endef
 define Package/daed/prerm
 #!/bin/sh
 if [ -x /etc/init.d/daed ]; then
-	/etc/init.d/daed stop 2>/dev/null || true
-	/etc/init.d/daed disable 2>/dev/null || true
+\t/etc/init.d/daed stop 2>/dev/null || true
+\t/etc/init.d/daed disable 2>/dev/null || true
 fi
 exit 0
 endef
@@ -202,16 +188,16 @@ endef
 define Build/Compile
 endef
 define Package/daed/install
-	\$(CP) \$(CURDIR)/prebuilt/. \$(1)/
+\t\$(CP) \$(CURDIR)/prebuilt/. \$(1)/
 endef
 \$(eval \$(call BuildPackage,daed))
 EOF
           cd "$sdkdir"
-          echo 'CONFIG_PACKAGE_daed=m' >> .config
+          echo \x27CONFIG_PACKAGE_daed=m\x27 >> .config
           make defconfig >/dev/null 2>&1 || true
           make package/repack/daed/compile -j"$(nproc)" V=s 2>&1 | tail -30
-          find -L bin -type f -name '*.apk' | sort
-          mapfile -t pkgs < <(find -L "$sdkdir/bin" -type f -name '*.apk' | sort)
+          find -L bin -type f -name \x27*.apk\x27 | sort
+          mapfile -t pkgs < <(find -L "$sdkdir/bin" -type f -name \x27*.apk\x27 | sort)
           cp "${pkgs[0]}" "$GITHUB_WORKSPACE/out_v3.apk"
 
       - name: Publish new canonical release assets
@@ -222,20 +208,16 @@ EOF
           tag="${{ steps.meta.outputs.tag }}"
           ver="${{ steps.meta.outputs.version }}"
           dev="${{ matrix.device }}"
-          
           v2_name="rust-daed_${ver}-${dev}-v2.apk"
           v3_name="rust-daed_${ver}-${dev}-v3.apk"
           legacy_name="${{ matrix.legacy_name }}"
-
           mkdir -p dist
           cp out_v3.apk "dist/$v3_name"
           cp out_v3.apk "dist/$legacy_name"
-          
           if [ -f out_v2.apk ]; then
             cp out_v2.apk "dist/$v2_name"
             gh release upload "$tag" "dist/$v2_name" --clobber
           fi
-          
           gh release upload "$tag" "dist/$v3_name" --clobber
           gh release upload "$tag" "dist/$legacy_name" --clobber
           echo "发布完成: $v3_name 与兼容文件 $legacy_name"
