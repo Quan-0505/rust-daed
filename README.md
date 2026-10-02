@@ -140,3 +140,43 @@ cargo test -p dae-outbound sticky::tests   # 4/4 测试通过
 
 ---
 *Go 版（kdae 引擎）见 [daed-kdae](https://github.com/Quan-0505/daed-kdae)。*
+
+
+---
+
+## ⚠️ 部署为局域网网关时必做（否则 LAN 设备无法上网）
+
+**症状**：daed 所在机器本机上网正常，但局域网内其他设备（把本机设为网关）无法上网。
+
+**根因**：daed 的 `auto_config_kernel_parameter` 只设置 `net.ipv4.conf.all.rp_filter=0`，
+而 Linux 实际生效值是 **`max(all, <iface>)`** —— 接口自身的默认值 `2`（loose 模式）会覆盖 `all=0`，
+导致 tproxy 转发的 LAN 流量被反向路径校验丢弃。
+
+**主机每次重启后**该 per-interface 参数都会恢复发行版默认值，因此必须持久化：
+
+```sh
+cat > /etc/sysctl.d/99-daed.conf <<'EOF'
+net.ipv4.conf.all.rp_filter=0
+net.ipv4.conf.default.rp_filter=0
+net.ipv4.conf.enp1s0.rp_filter=0     # 改成你的 LAN 接口名
+net.ipv4.ip_forward=1
+net.ipv6.conf.all.forwarding=1
+EOF
+sysctl --system
+modprobe nf_conntrack
+```
+
+修改 rp_filter **不需要重启 daed**（内核对已建立的连接不重校验，新连接立即生效）。
+
+**自查命令**：
+
+```sh
+sysctl net.ipv4.conf.all.rp_filter net.ipv4.conf.default.rp_filter net.ipv4.conf.enp1s0.rp_filter
+# 期望全部为 0；若接口值为 1 或 2 就是本问题
+```
+
+**确认流量是否恢复**（本机日志可直接看到 LAN 客户端是否成功走代理）：
+
+```sh
+grep '192.168.1.' /tmp/log/daed/current.jsonl | grep stream-transport | tail
+```
