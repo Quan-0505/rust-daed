@@ -5,7 +5,7 @@
 **daed（DaedNext，Rust 原生）一体式透明代理安装包 · 含 sticky-ip 增强**
 
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v3.1.2-orange.svg)](https://github.com/Quan-0505/rust-daed/releases/tag/v3.1.2)
+[![Version](https://img.shields.io/badge/version-v3.1.3-orange.svg)](https://github.com/Quan-0505/rust-daed/releases/tag/v3.1.3)
 
 **[简体中文](./README.md)** &nbsp;|&nbsp; **[English](./README.en.md)**
 
