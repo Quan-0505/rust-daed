@@ -52,3 +52,23 @@ rm -f /etc/systemd/system/daed.service
 systemctl daemon-reload             # 无需重启服务，当前进程不受影响
 systemctl show daed -p CanReload    # 应为 yes
 ```
+
+## 常见问题 2：局域网设备无法上网（本机正常）
+
+**症状**：daed 主机本机上网正常，但把该主机当网关的 LAN 设备全部断网。
+
+**原因**：`net.ipv4.conf.<lan_iface>.rp_filter` 为 1 或 2。daed 只设置 `all=0`，而 Linux 生效值取 `max(all, iface)`，接口默认 2 会覆盖。
+
+**修复**（零中断，无需重启 daed）：
+
+```sh
+sysctl -w net.ipv4.conf.all.rp_filter=0
+sysctl -w net.ipv4.conf.default.rp_filter=0
+sysctl -w net.ipv4.conf.enp1s0.rp_filter=0   # 替换为实际 LAN 接口
+modprobe nf_conntrack
+# 持久化（主机重启后 per-interface 会恢复默认）
+printf 'net.ipv4.conf.all.rp_filter=0\nnet.ipv4.conf.default.rp_filter=0\nnet.ipv4.conf.enp1s0.rp_filter=0\n' > /etc/sysctl.d/99-daed.conf
+sysctl --system
+```
+
+**验证**：`grep '192.168.' /tmp/log/daed/current.jsonl | grep stream-transport | tail` 应出现 LAN 客户端 IP 的成功代理记录。
