@@ -1,5 +1,5 @@
 diff --git a/crates/dae-outbound-core/src/lib.rs b/crates/dae-outbound-core/src/lib.rs
-index b79fbc9..bd83ac7 100644
+index 0149933..3a627f9 100644
 --- a/crates/dae-outbound-core/src/lib.rs
 +++ b/crates/dae-outbound-core/src/lib.rs
 @@ -1,3 +1,4 @@
