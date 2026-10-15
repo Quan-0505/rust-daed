@@ -1,0 +1,27 @@
+name: Verify pinned Rust release sources
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check release scripts and version
+        run: |
+          bash -n scripts/build-release.sh scripts/package-release.sh scripts/sync-github-release.sh
+          python3 -m py_compile scripts/prepare-sources.py scripts/package-release.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          lock=json.loads(Path('source/upstream.json').read_text())
+          assert lock['version']==json.loads(Path('package.json').read_text())['version']
+          assert lock['cpu_targets']==['x86-64-v2','x86-64-v3','generic-aarch64']
+          PY
+      - name: Verify exact upstream trees and sticky patch
+        run: python3 scripts/prepare-sources.py "$RUNNER_TEMP/rust-daed-source"

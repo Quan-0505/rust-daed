@@ -1,0 +1,22 @@
+{
+  "version": "3.2.0",
+  "ui": {
+    "repository": "https://github.com/ksong008/DaedNext.git",
+    "revision": "dc4af0e4d9e855e0d6ba6d719a2cc70f0be64327"
+  },
+  "core": {
+    "repository": "https://github.com/ksong008/DaeNext.git",
+    "revision": "f40c3494c7769efd796afff671d459db78f7ace9"
+  },
+  "release_profile": {
+    "lto": false,
+    "codegen_units": 1,
+    "static_crt": true
+  },
+  "cpu_targets": [
+    "x86-64-v2",
+    "x86-64-v3",
+    "generic-aarch64"
+  ],
+  "sticky_patch_sha256": "744f772d0170fac4f81b89c1962863f2dd35cab6d3870a0678869e95dfb5e461"
+}
