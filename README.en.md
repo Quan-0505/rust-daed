@@ -16,6 +16,8 @@ Build on Linux with stable Rust, nightly/rust-src, bpf-linker, clang/LLVM/libelf
 
 ```sh
 bash scripts/build-release.sh /absolute/path/to/new-output-directory
+# Optional validation; requires root / namespace privileges.
+bash scripts/test-release.sh /absolute/path/to/new-output-directory
 ```
 
 `source/upstream.json` pins source commits, patch hash and CPU baselines. Source preparation refuses an existing destination. Builds use two jobs, static CRT, one codegen unit and LTO disabled. The SDK workflow converts canonical APK assets to v3 while archiving the originals. Only public source, web assets and geodata are packaged; no accounts, subscriptions, nodes, passwords, tokens, databases or device backups are included. See [LICENSE](LICENSE).

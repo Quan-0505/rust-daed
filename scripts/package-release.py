@@ -1,7 +1,15 @@
 """Package public release binaries/geodata only; never read a device data directory."""
-import pathlib,sys,shutil,subprocess,tarfile,hashlib,json,time
+import pathlib,sys,shutil,subprocess,tarfile,hashlib,json,time,struct
 out=pathlib.Path(sys.argv[1]).resolve();version=sys.argv[2]
 assets=out/'assets';assets.mkdir(exist_ok=True)
+for binary,machine in [('daed-amd64-v2',62),('daed-amd64-v3',62),('daed-arm64',183)]:
+ path=out/'bin'/binary;data=path.read_bytes()
+ assert data[:6]==b'\x7fELF\x02\x01' and struct.unpack_from('<H',data,18)[0]==machine
+ assert 'INTERP' not in subprocess.check_output(['readelf','-l',str(path)],text=True), 'Dynamic runtime dependency: '+binary
+assert (out/'bin/daed-amd64-v2').read_bytes()!=(out/'bin/daed-amd64-v3').read_bytes(), 'CPU variants must be independently compiled'
+for kind in ('geoip','geosite'):
+ data=(out/'geo'/f'{kind}.dat').read_bytes()
+ assert len(data)>100000 and not data.lstrip().startswith(b'<'), 'Invalid public geodata'
 unit='''[Unit]
 Description=daed Rust network console with sticky-ip
 Documentation=https://github.com/Quan-0505/rust-daed
@@ -12,8 +20,15 @@ Conflicts=dae.service
 Type=simple
 User=root
 LimitNOFILE=1048576
+RuntimeDirectory=daed
+RuntimeDirectoryMode=0700
+Environment=DAED_PRODUCT_LOG_DIR=/tmp/log/daed
+ExecStartPre=/usr/bin/daed validate -c /etc/daed/ --state /etc/daed/daed.db
 ExecStart=/usr/bin/daed run -c /etc/daed/ --state /etc/daed/daed.db
+ExecStartPost=/usr/bin/daed wait-ready --timeout 60s
+ExecReload=/usr/bin/daed reload --timeout 60s
 Restart=on-failure
+RestartSec=5s
 [Install]
 WantedBy=multi-user.target
 '''
@@ -28,6 +43,9 @@ start_service() {
  procd_set_param respawn
  procd_set_param limits nofile="1048576 1048576"
  procd_close_instance
+}
+reload_service() {
+ /usr/bin/daed reload --timeout 60s
 }
 '''
 post='''#!/bin/sh

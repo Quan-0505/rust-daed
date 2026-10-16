@@ -23,6 +23,12 @@ with tempfile.TemporaryDirectory(prefix='rust-daed-release-api-') as temp:
             except (urllib.error.URLError,ConnectionError):time.sleep(.1)
         else:raise RuntimeError('API did not become ready')
         assert code==200 and json.loads(body)['healthCheck']==1
+        for command in (
+            [a.binary,'validate','-c',temp,'--state',str(root/'daed.db')],
+            [a.binary,'wait-ready','--control',str(root/'control.sock'),'--timeout','5s'],
+        ):
+            check=subprocess.run(command,capture_output=True,text=True,timeout=15)
+            assert check.returncode==0,check.stdout+check.stderr
         code,body=request('/');assert code==200 and b'<html' in body.lower()
         code,body=request('/api/auth/users',{'username':'release-test','password':secrets.token_urlsafe(24)})
         assert code==201;created_token=json.loads(body)['token']
@@ -35,7 +41,7 @@ with tempfile.TemporaryDirectory(prefix='rust-daed-release-api-') as temp:
         code,body=request('/api/logs?level=all');assert code==200;json.loads(body)
         code,body=request('/api/runtime/overview');assert code==200;json.loads(body)
         assert child.poll() is None
-        pathlib.Path(a.report).write_text(json.dumps({'productionBinary':True,'fakeRuntimeUsed':False,'webServed':True,'health':True,'syntheticAccountLogin':True,'anonymousLogsRejected':True,'authenticatedLogsAndOverview':True,'engineForwardingTested':False},indent=2)+'\n')
+        pathlib.Path(a.report).write_text(json.dumps({'productionBinary':True,'fakeRuntimeUsed':False,'validateAndWaitReady':True,'webServed':True,'health':True,'syntheticAccountLogin':True,'anonymousLogsRejected':True,'authenticatedLogsAndOverview':True,'engineForwardingTested':False},indent=2)+'\n')
         print('Real release UI/API, synthetic account, protected logs and overview: PASS')
     finally:
         child.terminate()

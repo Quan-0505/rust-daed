@@ -26,6 +26,8 @@ Linux 构建机需要 Rust stable、nightly + rust-src、bpf-linker、clang/LLVM
 
 ```sh
 bash scripts/build-release.sh /absolute/path/to/new-output-directory
+# Optional validation; requires root / namespace privileges.
+bash scripts/test-release.sh /absolute/path/to/new-output-directory
 ```
 
 `source/upstream.json` 固定版本、源码提交、补丁 SHA256 和 CPU 基线。准备脚本拒绝覆盖已有源码目录；构建默认两个任务，关闭 LTO，生成独立 amd64-v2/v3 与 ARM64 程序，以及 2 个 DEB 和 4 个原始 APK。发布前由 `.github/workflows/repack-apk-v3.yml` 使用 OpenWrt SDK 转换 v3，并保留 v2 原件。

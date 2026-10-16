@@ -14,8 +14,8 @@ jobs:
           persist-credentials: false
       - name: Check release scripts and version
         run: |
-          bash -n scripts/build-release.sh scripts/package-release.sh scripts/sync-github-release.sh
-          python3 -m py_compile scripts/prepare-sources.py scripts/package-release.py
+          bash -n scripts/build-release.sh scripts/package-release.sh scripts/sync-github-release.sh scripts/test-release.sh
+          python3 -m py_compile scripts/prepare-sources.py scripts/package-release.py scripts/validate-api.py
           python3 - <<'PY'
           import json
           from pathlib import Path
