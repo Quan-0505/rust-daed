@@ -1,0 +1,99 @@
+diff --git a/crates/dae-ebpf-program/src/packet.rs b/crates/dae-ebpf-program/src/packet.rs
+index bc4ef7c9..f60ecf63 100644
+--- a/crates/dae-ebpf-program/src/packet.rs
++++ b/crates/dae-ebpf-program/src/packet.rs
+@@ -36,6 +36,80 @@ pub const VLAN_DEPTH_MASK: u8 = 0b0000_0011;
+ const VLAN_OUTER_8021AD: u8 = 0b0000_0100;
+ const VLAN_INNER_8021AD: u8 = 0b0000_1000;
+ 
++/// Select an Ethernet header for the WAN L3 hook when a RAWIP driver leaves
++/// an IPv4 Ethernet frame in the skb data. Other packets retain the L3 offset.
++#[inline(always)]
++pub fn wan_egress_l3_header_len(
++    skb_protocol: u32,
++    ethernet_protocol: u16,
++    ipv4_version_ihl: u8,
++    ipv4_total_len: u16,
++    skb_len: u32,
++) -> u32 {
++    if skb_protocol != ETH_P_IP_NETWORK
++        || ethernet_protocol != 0x0800
++        || skb_len < ETH_HLEN + IPV4_MIN_HEADER_LEN
++        || ipv4_version_ihl >> 4 != 4
++        || (ipv4_version_ihl & 0x0f) < 5
++    {
++        return 0;
++    }
++    let ip_header_len = ((ipv4_version_ihl & 0x0f) as u32) * 4;
++    if ipv4_total_len as u32 != skb_len - ETH_HLEN
++        || (ipv4_total_len as u32) < ip_header_len
++    {
++        return 0;
++    }
++    ETH_HLEN
++}
++
++#[inline(always)]
++pub unsafe fn detect_wan_egress_l3_link_h_len(skb: *mut __sk_buff) -> u32 {
++    let mut ethernet = [0u8; ETH_HLEN as usize];
++    let mut ipv4 = [0u8; IPV4_MIN_HEADER_LEN as usize];
++    if !unsafe { load_bytes(skb, 0, ethernet.as_mut_ptr().cast::<c_void>(), ETH_HLEN) }
++        || !unsafe {
++            load_bytes(
++                skb,
++                ETH_HLEN,
++                ipv4.as_mut_ptr().cast::<c_void>(),
++                IPV4_MIN_HEADER_LEN,
++            )
++        }
++    {
++        return 0;
++    }
++    let ethernet_protocol = u16::from_be_bytes([ethernet[12], ethernet[13]]);
++    let ipv4_total_len = u16::from_be_bytes([ipv4[2], ipv4[3]]);
++    wan_egress_l3_header_len(
++        unsafe { (*skb).protocol },
++        ethernet_protocol,
++        ipv4[0],
++        ipv4_total_len,
++        unsafe { (*skb).len },
++    )
++}
++
++#[cfg(test)]
++mod wan_egress_l3_header_tests {
++    use super::*;
++
++    #[test]
++    fn detects_valid_rawip_ethernet_ipv4_only() {
++        assert_eq!(wan_egress_l3_header_len(ETH_P_IP_NETWORK, 0x0800, 0x45, 120, 134), ETH_HLEN);
++        assert_eq!(wan_egress_l3_header_len(ETH_P_IP_NETWORK, 0x0800, 0x46, 120, 134), ETH_HLEN);
++    }
++
++    #[test]
++    fn keeps_normal_l3_and_invalid_frames_at_zero_offset() {
++        assert_eq!(wan_egress_l3_header_len(ETH_P_IP_NETWORK, 0x0000, 0x45, 120, 120), 0);
++        assert_eq!(wan_egress_l3_header_len(ETH_P_IP_NETWORK, 0x0800, 0x45, 119, 134), 0);
++        assert_eq!(wan_egress_l3_header_len(ETH_P_IP_NETWORK, 0x0800, 0x44, 120, 134), 0);
++        assert_eq!(wan_egress_l3_header_len(ETH_P_IP_NETWORK, 0x0800, 0x65, 120, 134), 0);
++        assert_eq!(wan_egress_l3_header_len(ETH_P_IPV6_NETWORK, 0x86dd, 0x60, 100, 114), 0);
++    }
++}
++
+ #[repr(C)]
+ pub struct ParsedPacket {
+     pub eth_src: [u8; 6],
+diff --git a/crates/dae-ebpf-program/src/programs.rs b/crates/dae-ebpf-program/src/programs.rs
+index 24115764..57ef88b8 100644
+--- a/crates/dae-ebpf-program/src/programs.rs
++++ b/crates/dae-ebpf-program/src/programs.rs
+@@ -45,7 +45,8 @@ pub extern "C" fn tproxy_wan_egress_l2(ctx: *mut __sk_buff) -> i32 {
+ #[unsafe(no_mangle)]
+ #[unsafe(link_section = "classifier/wan_egress_l3")]
+ pub extern "C" fn tproxy_wan_egress_l3(ctx: *mut __sk_buff) -> i32 {
+-    crate::tproxy::wan_egress(ctx, 0)
++    let link_h_len = unsafe { crate::packet::detect_wan_egress_l3_link_h_len(ctx) };
++    crate::tproxy::wan_egress(ctx, link_h_len)
+ }
+ 
+ #[unsafe(no_mangle)]

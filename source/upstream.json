@@ -18,5 +18,6 @@
     "x86-64-v3",
     "generic-aarch64"
   ],
-  "sticky_patch_sha256": "744f772d0170fac4f81b89c1962863f2dd35cab6d3870a0678869e95dfb5e461"
+  "sticky_patch_sha256": "744f772d0170fac4f81b89c1962863f2dd35cab6d3870a0678869e95dfb5e461",
+  "sipa_rawip_patch_sha256": "08de2d9ae136f40bf832266604566f4c441a6274442159f855971f2c42d3233a"
 }

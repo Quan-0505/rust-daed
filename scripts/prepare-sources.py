@@ -14,5 +14,12 @@ expected=lock['sticky_patch_sha256']
 assert hashlib.sha256(patch.read_bytes()).hexdigest()==expected,'Unexpected sticky patch'
 run('git','apply','--check',str(patch),cwd=root/'DaeNext')
 run('git','apply',str(patch),cwd=root/'DaeNext')
-assert (root/'DaeNext/crates/dae-outbound-core/src/sticky.rs').read_bytes()==(repo/'source/sticky.rs').read_bytes()
-print('Pinned Rust UI/core and sticky patch prepared')
+def normalized_text(path):
+    return path.read_text(encoding='utf-8').replace('\r\n','\n')
+assert normalized_text(root/'DaeNext/crates/dae-outbound-core/src/sticky.rs')==normalized_text(repo/'source/sticky.rs')
+sipa_patch=repo/'patches/sipa-rawip.patch'
+expected=lock['sipa_rawip_patch_sha256']
+assert hashlib.sha256(sipa_patch.read_bytes()).hexdigest()==expected,'Unexpected SIPA RAWIP patch'
+run('git','apply','--check',str(sipa_patch),cwd=root/'DaeNext')
+run('git','apply',str(sipa_patch),cwd=root/'DaeNext')
+print('Pinned Rust UI/core, sticky-ip, and SIPA RAWIP compatibility patches prepared')
