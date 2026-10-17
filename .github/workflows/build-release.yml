@@ -65,7 +65,7 @@ jobs:
           CARGO_BUILD_JOBS: 2
         run: |
           bash -n scripts/build-release.sh scripts/package-release.sh
-          bash scripts/build-release.sh "$RUNNER_TEMP/rust-daed-release"
+          RUST_RELEASE_CACHE="$RUNNER_TEMP/rust-cache" bash scripts/build-release.sh "$RUNNER_TEMP/rust-daed-release"
 
       - name: Test BPF parser and verify package contents
         run: |
