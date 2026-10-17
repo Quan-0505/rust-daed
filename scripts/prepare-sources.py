@@ -20,6 +20,6 @@ assert normalized_text(root/'DaeNext/crates/dae-outbound-core/src/sticky.rs')==n
 sipa_patch=repo/'patches/sipa-rawip.patch'
 expected=lock['sipa_rawip_patch_sha256']
 assert hashlib.sha256(sipa_patch.read_bytes()).hexdigest()==expected,'Unexpected SIPA RAWIP patch'
-run('git','apply','--check',str(sipa_patch),cwd=root/'DaeNext')
-run('git','apply',str(sipa_patch),cwd=root/'DaeNext')
+run('git','apply','--unidiff-zero','--check',str(sipa_patch),cwd=root/'DaeNext')
+run('git','apply','--unidiff-zero',str(sipa_patch),cwd=root/'DaeNext')
 print('Pinned Rust UI/core, sticky-ip, and SIPA RAWIP compatibility patches prepared')

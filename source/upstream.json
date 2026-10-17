@@ -19,5 +19,5 @@
     "generic-aarch64"
   ],
   "sticky_patch_sha256": "744f772d0170fac4f81b89c1962863f2dd35cab6d3870a0678869e95dfb5e461",
-  "sipa_rawip_patch_sha256": "a6e7a31acc0fffec4e1cd4c332d8714cb6024449cc810f7f9548efcfa5eaccc4"
+  "sipa_rawip_patch_sha256": "bde06350353a1b10aa7888196b9fce2e625e193d0d61bb3b3d2c776d15dab752"
 }
