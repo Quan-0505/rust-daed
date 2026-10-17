@@ -3,6 +3,8 @@ set -euo pipefail
 repo=$(cd "$(dirname "$0")/.." && pwd)
 out=$(realpath -m "$1")
 version=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["version"])' "$repo/source/upstream.json")
+ui=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["ui"]["revision"][:12])' "$repo/source/upstream.json")
+core=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["core"]["revision"][:12])' "$repo/source/upstream.json")
 export PATH="$HOME/.cargo/bin:/usr/local/go/bin:$PATH"
 export CARGO_BUILD_JOBS=${CARGO_BUILD_JOBS:-2}
 export CARGO_PROFILE_RELEASE_LTO=false
@@ -17,13 +19,15 @@ cp -a "$ui/apps/web/dist" "$out/web"
 cd "$ui/DaeNext"
 cargo fetch --locked
 export DAE_DAEMON_VERSION="daed rust-native product version=v$version ui=dc4af0e4d9e8 core=f40c3494c776+sticky features=native-ebpf,jemalloc,boringssl profile=release,lto-off"
-cache=${RUST_RELEASE_CACHE:-/build/rust-daed-3.2.0}
+cache=${RUST_RELEASE_CACHE:-/build/rust-daed-$version}
 for level in v2 v3; do
+  DAE_DAEMON_VERSION="daed rust-native product version=v$version ui=$ui core=$core+sticky+sipa-rawip features=native-ebpf,jemalloc,boringssl profile=release,lto-off" \
   CARGO_TARGET_DIR="$cache-$level" RUSTFLAGS="-C target-feature=+crt-static -C target-cpu=x86-64-$level" \
     cargo build --locked --release -p dae-daemon --bin daed --target x86_64-unknown-linux-gnu
   cp "$cache-$level/x86_64-unknown-linux-gnu/release/daed" "$out/bin/daed-amd64-$level"
 done
-CARGO_TARGET_DIR="$cache-arm64" RUSTFLAGS='-C target-feature=+crt-static -C target-cpu=generic' \
+  DAE_DAEMON_VERSION="daed rust-native product version=v$version ui=$ui core=$core+sticky+sipa-rawip features=native-ebpf,jemalloc,boringssl profile=release,lto-off" \
+  CARGO_TARGET_DIR="$cache-arm64" RUSTFLAGS='-C target-feature=+crt-static -C target-cpu=generic' \
   CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
   CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++ \
   AR_aarch64_unknown_linux_gnu=aarch64-linux-gnu-ar \

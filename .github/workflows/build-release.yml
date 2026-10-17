@@ -1,0 +1,71 @@
+name: Build and verify Rust daed release assets
+
+on:
+  push:
+    branches: ['codex/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rust-daed-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install native and cross-build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y build-essential clang llvm libclang-dev libelf-dev cmake libssl-dev perl pkg-config gcc-aarch64-linux-gnu g++-aarch64-linux-gnu dpkg-dev curl file
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.24.0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu,bpfel-unknown-none
+          components: rust-src
+
+      - name: Install BPF linker
+        run: cargo install bpf-linker --locked
+
+      - name: Build pinned sources and package all targets
+        env:
+          CARGO_BUILD_JOBS: 2
+        run: |
+          bash -n scripts/build-release.sh scripts/package-release.sh
+          bash scripts/build-release.sh "$RUNNER_TEMP/rust-daed-release"
+
+      - name: Test BPF parser and verify package contents
+        run: |
+          cargo test --manifest-path "$RUNNER_TEMP/rust-daed-release/ui/DaeNext/Cargo.toml" --locked -p dae-ebpf-program --lib
+          python3 - <<'PY'
+          import hashlib, pathlib
+          assets=pathlib.Path("${{ runner.temp }}/rust-daed-release/assets")
+          files=sorted(p for p in assets.iterdir() if p.is_file())
+          assert len(files)==6, [p.name for p in files]
+          (assets/'SHA256SUMS').write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n' for p in files))
+          for p in files:
+              assert p.stat().st_size > 100_000, (p.name, p.stat().st_size)
+          print('\n'.join(f'{p.name}: {p.stat().st_size} bytes' for p in files))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rust-daed-release-candidate-${{ github.sha }}
+          path: ${{ runner.temp }}/rust-daed-release/assets/
+          if-no-files-found: error
+          retention-days: 14

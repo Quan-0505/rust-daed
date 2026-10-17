@@ -4,7 +4,7 @@ Rust-native daed with sticky-ip, pinned DaedNext UI and DaeNext engine.
 
 [简体中文](README.md) · [Releases](https://github.com/Quan-0505/rust-daed/releases/latest)
 
-Version 3.2.0 pins UI `dc4af0e4d9e8` and core `f40c3494c776`. It retains sticky-ip and includes upstream log-query retries/error handling, filtered log isolation, and DNS/subscription/TLS/Meek/QUIC/UDP fixes. See [source and update details](source/UPSTREAM-20261016.md).
+Version 3.2.1 candidate pins UI `dc4af0e4d9e8` and core `f40c3494c776`. It retains sticky-ip and adds validated IPv4 Ethernet-frame detection for F50 SIPA RAWIP WAN egress. It also includes upstream log-query retries/error handling, filtered log isolation, and DNS/subscription/TLS/Meek/QUIC/UDP fixes. Source tests pass; a full ARM64 release build and device traffic validation are pending. See [source and update details](source/UPSTREAM-20261018.md).
 
 Production builds retain the upstream default native Aya/eBPF, jemalloc and BoringSSL features. The real upstream UI is installed under `/usr/share/daed/web`; the development mock dashboard at this repository root is not shipped.
 
@@ -20,4 +20,4 @@ bash scripts/build-release.sh /absolute/path/to/new-output-directory
 bash scripts/test-release.sh /absolute/path/to/new-output-directory
 ```
 
-`source/upstream.json` pins source commits, patch hash and CPU baselines. Source preparation refuses an existing destination. Builds use two jobs, static CRT, one codegen unit and LTO disabled. The SDK workflow converts canonical APK assets to v3 while archiving the originals. Only public source, web assets and geodata are packaged; no accounts, subscriptions, nodes, passwords, tokens, databases or device backups are included. See [LICENSE](LICENSE).
+`source/upstream.json` pins source commits, patch hashes and CPU baselines. Source preparation refuses an existing destination. Builds use two jobs, static CRT, one codegen unit and LTO disabled. The Linux CI build validates all package payloads; the SDK workflow converts canonical APK assets to v3. Only public source, web assets and geodata are packaged; no accounts, subscriptions, nodes, passwords, tokens, databases or device backups are included. See [LICENSE](LICENSE).
