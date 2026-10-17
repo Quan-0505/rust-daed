@@ -5,7 +5,7 @@ index bc4ef7c9..f60ecf63 100644
 @@ -36,6 +36,80 @@ pub const VLAN_DEPTH_MASK: u8 = 0b0000_0011;
  const VLAN_OUTER_8021AD: u8 = 0b0000_0100;
  const VLAN_INNER_8021AD: u8 = 0b0000_1000;
- 
+
 +/// Select an Ethernet header for the WAN L3 hook when a RAWIP driver leaves
 +/// an IPv4 Ethernet frame in the skb data. Other packets retain the L3 offset.
 +#[inline(always)]
@@ -95,5 +95,5 @@ index 24115764..57ef88b8 100644
 +    let link_h_len = unsafe { crate::packet::detect_wan_egress_l3_link_h_len(ctx) };
 +    crate::tproxy::wan_egress(ctx, link_h_len)
  }
- 
+
  #[unsafe(no_mangle)]
