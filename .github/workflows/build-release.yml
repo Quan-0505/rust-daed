@@ -36,8 +36,15 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu,bpfel-unknown-none
+          targets: x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu
           components: rust-src
+
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src
+
+      - name: Keep stable as the top-level compiler
+        run: rustup default stable
 
       - name: Install BPF linker
         run: cargo install bpf-linker --locked
