@@ -24,7 +24,7 @@ jobs:
       - name: Install native and cross-build dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y build-essential clang llvm libclang-dev libelf-dev cmake libssl-dev perl pkg-config gcc-aarch64-linux-gnu g++-aarch64-linux-gnu dpkg-dev curl file
+          sudo apt-get install -y build-essential clang llvm libclang-dev libelf-dev cmake libssl-dev perl pkg-config gcc-aarch64-linux-gnu g++-aarch64-linux-gnu dpkg-dev curl file zstd
 
       - uses: actions/setup-node@v4
         with:
@@ -46,8 +46,19 @@ jobs:
       - name: Keep stable as the top-level compiler
         run: rustup default stable
 
-      - name: Install BPF linker
-        run: cargo install bpf-linker --locked
+      - name: Install pinned BPF linker release
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/bpf-linker-v0.12.0.tar.zst"
+          curl --fail --location --retry 3 --output "$archive" \
+            https://github.com/aya-rs/bpf-linker/releases/download/v0.12.0/bpf-linker-x86_64-unknown-linux-musl.tar.zst
+          echo "6789717c8cb6a2a5d920f3b6bfac2bd7efc00f6228ecd149108a99699a75c679  $archive" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/bpf-linker"
+          tar --zstd --extract --file "$archive" --directory "$RUNNER_TEMP/bpf-linker"
+          linker="$(find "$RUNNER_TEMP/bpf-linker" -type f -name bpf-linker -print -quit)"
+          test -n "$linker"
+          install -m 0755 "$linker" "$HOME/.cargo/bin/bpf-linker"
+          bpf-linker --version
 
       - name: Build pinned sources and package all targets
         env:
