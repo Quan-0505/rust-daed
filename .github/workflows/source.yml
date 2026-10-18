@@ -23,8 +23,9 @@ jobs:
           assert lock['version']==json.loads(Path('package.json').read_text())['version']
           assert lock['cpu_targets']==['x86-64-v2','x86-64-v3','generic-aarch64']
           assert len(lock['sipa_rawip_patch_sha256'])==64
+          assert len(lock['bpf_lpm_patch_sha256'])==64
           PY
-      - name: Verify exact upstream trees and sticky patch
+      - name: Verify exact upstream trees and compatibility patches
         run: python3 scripts/prepare-sources.py "$RUNNER_TEMP/rust-daed-source"
       - uses: dtolnay/rust-toolchain@stable
       - name: Test Rust eBPF packet offset selection

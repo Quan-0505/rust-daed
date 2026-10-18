@@ -22,4 +22,9 @@ expected=lock['sipa_rawip_patch_sha256']
 assert hashlib.sha256(sipa_patch.read_bytes()).hexdigest()==expected,'Unexpected SIPA RAWIP patch'
 run('git','apply','--unidiff-zero','--check',str(sipa_patch),cwd=root/'DaeNext')
 run('git','apply','--unidiff-zero',str(sipa_patch),cwd=root/'DaeNext')
-print('Pinned Rust UI/core, sticky-ip, and SIPA RAWIP compatibility patches prepared')
+lpm_patch=repo/'patches/bpf-lpm-enomem-retry.patch'
+expected=lock['bpf_lpm_patch_sha256']
+assert hashlib.sha256(lpm_patch.read_bytes()).hexdigest()==expected,'Unexpected BPF LPM patch'
+run('git','apply','--check',str(lpm_patch),cwd=root/'DaeNext')
+run('git','apply',str(lpm_patch),cwd=root/'DaeNext')
+print('Pinned Rust UI/core, sticky-ip, SIPA RAWIP, and BPF LPM retry patches prepared')

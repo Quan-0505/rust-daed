@@ -1,0 +1,143 @@
+diff --git a/crates/dae-daemon/src/production_runtime_owner/resident_routing/lpm_batch.rs b/crates/dae-daemon/src/production_runtime_owner/resident_routing/lpm_batch.rs
+index 09f52aa8..b25a2a98 100644
+--- a/crates/dae-daemon/src/production_runtime_owner/resident_routing/lpm_batch.rs
++++ b/crates/dae-daemon/src/production_runtime_owner/resident_routing/lpm_batch.rs
+@@ -6,7 +6,7 @@ use std::{io, mem::size_of};
+ pub(super) fn update_lpm_batch(
+     map: &ValidatedRuntimeMapHandle,
+     prefixes: &[IpPrefix],
+-) -> io::Result<()> {
++) -> BatchUpdateResult {
+     #[repr(C)]
+     struct BatchAttr {
+         in_batch: u64,
+@@ -33,11 +33,26 @@ pub(super) fn update_lpm_batch(
+     // SAFETY: both contiguous arrays outlive the syscall; the validated map
+     // uses exactly 20-byte keys and 4-byte values. The kernel updates count.
+     let result = unsafe { libc::syscall(libc::SYS_bpf, 26_u32, &mut attr, size_of::<BatchAttr>()) };
++    let processed = (attr.count as usize).min(prefixes.len());
+     if result < 0 {
+-        return Err(io::Error::last_os_error());
++        return BatchUpdateResult {
++            processed,
++            error: Some(io::Error::last_os_error()),
++        };
+     }
+-    if attr.count as usize != prefixes.len() {
+-        return Err(io::Error::other("resident LPM batch update was incomplete"));
++    if processed != prefixes.len() {
++        return BatchUpdateResult {
++            processed,
++            error: Some(io::Error::other("resident LPM batch update was incomplete")),
++        };
+     }
+-    Ok(())
++    BatchUpdateResult {
++        processed,
++        error: None,
++    }
++}
++
++pub(super) struct BatchUpdateResult {
++    pub(super) processed: usize,
++    pub(super) error: Option<io::Error>,
+ }
+diff --git a/crates/dae-daemon/src/production_runtime_owner/resident_routing/maps.rs b/crates/dae-daemon/src/production_runtime_owner/resident_routing/maps.rs
+index ae3a62b3..a68afb82 100644
+--- a/crates/dae-daemon/src/production_runtime_owner/resident_routing/maps.rs
++++ b/crates/dae-daemon/src/production_runtime_owner/resident_routing/maps.rs
+@@ -4,6 +4,8 @@ use std::{
+     mem::size_of,
+     net::IpAddr,
+     os::fd::{FromRawFd, OwnedFd},
++    thread,
++    time::Duration,
+ };
+
+ use dae_config::Config;
+@@ -171,35 +173,77 @@ fn create_lpm_map(prefixes: &[IpPrefix]) -> Result<ValidatedRuntimeMapHandle, St
+     let one = 1_u32.to_ne_bytes();
+     let mut batch_supported = true;
+     for chunk in prefixes.chunks(512) {
++        let mut processed = 0;
+         if batch_supported && chunk.len() > 1 {
+-            match update_lpm_batch(&map, chunk) {
+-                Ok(()) => continue,
+-                Err(error)
++            let result = update_lpm_batch(&map, chunk);
++            processed = result.processed;
++            match result.error {
++                None => continue,
++                Some(error)
+                     if matches!(
+                         error.raw_os_error(),
+                         Some(libc::ENOSYS | libc::EINVAL | libc::EOPNOTSUPP)
+                     ) =>
+                 {
++                    // Unsupported commands may leave the input count untouched;
++                    // never interpret that as successful progress.
++                    processed = 0;
+                     batch_supported = false;
+                 }
+-                Err(error) => {
++                Some(error) if error.raw_os_error() == Some(libc::ENOMEM) => {
++                    // LPM batch updates may commit a prefix of the batch before
++                    // returning ENOMEM. Continue from the kernel-reported count
++                    // with scalar updates; this inner map is not published yet.
++                }
++                Some(error) if error.raw_os_error().is_none() && processed < chunk.len() => {
++                    // A successful syscall with a short count is also partial
++                    // progress; finish the uncommitted suffix through scalars.
++                }
++                Some(error) => {
+                     return Err(format!(
+                         "batch update resident LPM trie map failed: {error}"
+                     ));
+                 }
+             }
+         }
+-        // Unsupported kernels retain the scalar path. Reapplying a partially
+-        // completed batch is safe: this new inner map has not been published.
+-        for prefix in chunk {
++        // Unsupported kernels and partial ENOMEM batches continue through the
++        // scalar path. The count returned by BPF_MAP_UPDATE_BATCH prevents
++        // needlessly repeating entries already committed by the kernel.
++        for prefix in chunk.iter().skip(processed) {
+             let key = prefix_to_lpm_key(prefix);
+-            map.update_elem_bytes(&key, &one)
++            update_lpm_elem_with_oom_retry(&map, &key, &one)
+                 .map_err(|err| format!("update resident LPM trie map failed: {err}"))?;
+         }
+     }
+     Ok(map)
+ }
+
++fn update_lpm_elem_with_oom_retry(
++    map: &ValidatedRuntimeMapHandle,
++    key: &[u8],
++    value: &[u8],
++) -> io::Result<()> {
++    const MAX_ENOMEM_RETRIES: usize = 8;
++    const MAX_DELAY: Duration = Duration::from_millis(50);
++    let mut delay = Duration::from_millis(2);
++    for attempt in 0..=MAX_ENOMEM_RETRIES {
++        match map.update_elem_bytes(key, value) {
++            Ok(()) => return Ok(()),
++            Err(error)
++                if error.raw_os_error() == Some(libc::ENOMEM) && attempt < MAX_ENOMEM_RETRIES =>
++            {
++                // The kernel refills its per-CPU BPF memory cache asynchronously.
++                // A short bounded backoff allows that refill to complete without
++                // turning a transient allocation miss into a failed config load.
++                thread::sleep(delay);
++                delay = delay.saturating_mul(2).min(MAX_DELAY);
++            }
++            Err(error) => return Err(error),
++        }
++    }
++    unreachable!("bounded ENOMEM retry loop always returns")
++}
++
+ pub(super) fn prefix_to_lpm_key(prefix: &IpPrefix) -> [u8; 20] {
+     let mut key = [0_u8; 20];
+     let (bytes, bits) = match prefix.addr() {
