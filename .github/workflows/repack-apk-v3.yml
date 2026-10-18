@@ -65,13 +65,26 @@ jobs:
       - name: Download OpenWrt ${{ inputs.release }} SDK
         run: |
           set -euo pipefail
-          rel=$(curl -fLsS "https://downloads.openwrt.org/releases/" \
-            | grep -oE "href=\"${{ inputs.release }}\.[0-9]+/\"" | cut -d '"' -f2 | tr -d / | sort -Vu | tail -1)
+          tgt="${{ matrix.sdk_target }}"
+          mapfile -t releases < <(curl -fLsS "https://downloads.openwrt.org/releases/" \
+            | grep -oE "href=\"${{ inputs.release }}\.[0-9]+/\"" | cut -d '"' -f2 | tr -d / | sort -Vu | tac)
+          test "${#releases[@]}" -gt 0
+          # Some point releases omit a target (for example, rockchip/armv8 is
+          # absent from 25.12.6 while still available in 25.12.5). Select the
+          # newest point release that actually publishes this target's SDK.
+          rel=""
+          sdk=""
+          for candidate in "${releases[@]}"; do
+            listing=$(curl -fLsS "https://downloads.openwrt.org/releases/${candidate}/targets/${tgt}/" 2>/dev/null || true)
+            candidate_sdk=$(printf '%s\n' "$listing" | grep -oE 'openwrt-sdk-[^"<]+\.tar\.zst' | head -1 || true)
+            if [ -n "$candidate_sdk" ]; then
+              rel="$candidate"
+              sdk="$candidate_sdk"
+              break
+            fi
+          done
           test -n "$rel"
           echo "OpenWrt release: $rel"
-          tgt="${{ matrix.sdk_target }}"
-          sdk=$(curl -fLsS "https://downloads.openwrt.org/releases/${rel}/targets/${tgt}/" \
-            | grep -oE 'openwrt-sdk-[^"<]+\.tar\.zst' | head -1)
           test -n "$sdk"
           echo "SDK: $sdk"
           curl -fLsS --retry 3 -o sdk.tar.zst "https://downloads.openwrt.org/releases/${rel}/targets/${tgt}/${sdk}"
