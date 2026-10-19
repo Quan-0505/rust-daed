@@ -4,7 +4,7 @@ Rust-native daed with sticky-ip, pinned DaedNext UI and DaeNext engine.
 
 [简体中文](README.md) · [Releases](https://github.com/Quan-0505/rust-daed/releases/latest)
 
-Version 3.2.0 pins UI `dc4af0e4d9e8` and core `f40c3494c776`. It retains sticky-ip and includes upstream log-query retries/error handling, filtered log isolation, and DNS/subscription/TLS/Meek/QUIC/UDP fixes. See [source and update details](source/UPSTREAM-20261016.md).
+Version 3.2.1 keeps the UI `dc4af0e4d9e8` and core `f40c3494c776` pinned by v3.2.0, and adds an eBPF parser adjustment for ZTE SIPA RAWIP WAN egress plus more resilient BPF LPM route-map population under transient memory pressure. The first E5 ARM64 candidate passed 10 daemon restarts and 3 OpenWrt soft reboots, retaining 15 NodeBabyLink routes and restoring HTTPS access; one restart needed about 15 seconds for proxy egress to recover. F50 hardware has not been validated. See the [v3.2.1 release notes](https://github.com/Quan-0505/rust-daed/releases/tag/v3.2.1).
 
 Production builds retain the upstream default native Aya/eBPF, jemalloc and BoringSSL features. The real upstream UI is installed under `/usr/share/daed/web`; the development mock dashboard at this repository root is not shipped.
 
