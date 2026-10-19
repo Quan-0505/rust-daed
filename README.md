@@ -4,11 +4,7 @@ Rust 原生 daed + sticky-ip，基于固定版本的 DaedNext 管理界面和 Da
 
 [English](README.en.md) · [安装包](https://github.com/Quan-0505/rust-daed/releases/latest)
 
-## v3.2.1
 
-2026-10-18 发布的兼容性更新基于 v3.2.0 固定的界面 `dc4af0e4d9e8` 与引擎 `f40c3494c776`，修正中兴 SIPA RAWIP WAN 出站的 eBPF 解析，并改进 BPF LPM 路由映射在短时内存压力下的填充：保留批量写入进度，对临时 `ENOMEM` 标量写入进行有界退避重试。首台 E5 的 ARM64 候选已通过 10 次服务重启和 3 次 OpenWrt 软重启，保留 15 条 NodeBabyLink 路由并恢复 HTTPS 访问；其中一次代理出口约 15 秒后恢复。F50 尚未实机验证。详见 [v3.2.1 发布说明](https://github.com/Quan-0505/rust-daed/releases/tag/v3.2.1)。
-
-生产构建采用上游默认功能：Aya/eBPF、jemalloc、BoringSSL。Web 文件安装到 `/usr/share/daed/web`，使用最新上游界面；仓库根目录的开发演示页面不进入安装包。
 
 ## 安装包
 
