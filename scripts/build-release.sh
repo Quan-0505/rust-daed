@@ -18,7 +18,7 @@ pnpm --dir "$ui" --filter daed check-types
 cp -a "$ui/apps/web/dist" "$out/web"
 cd "$ui/DaeNext"
 cargo fetch --locked
-export DAE_DAEMON_VERSION="daed rust-native product version=v$version ui=dc4af0e4d9e8 core=f40c3494c776+sticky+sipa-rawip+bpf-lpm-retry features=native-ebpf,jemalloc,boringssl profile=release,lto-off"
+export DAE_DAEMON_VERSION="daed rust-native product version=v$version ui=$ui core=$core+sticky+sipa-rawip+bpf-lpm-retry features=native-ebpf,jemalloc,boringssl profile=release,lto-off"
 cache=${RUST_RELEASE_CACHE:-/build/rust-daed-$version}
 for level in v2 v3; do
   DAE_DAEMON_VERSION="daed rust-native product version=v$version ui=$ui core=$core+sticky+sipa-rawip+bpf-lpm-retry features=native-ebpf,jemalloc,boringssl profile=release,lto-off" \

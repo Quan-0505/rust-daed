@@ -4,17 +4,17 @@ Rust 原生 daed + sticky-ip，基于固定版本的 DaedNext 管理界面和 Da
 
 [English](README.en.md) · [安装包](https://github.com/Quan-0505/rust-daed/releases/latest)
 
-## v3.2.1 (SIPA 兼容候选)
+## v3.2.2 上游同步候选版
 
-基于 2026-10-16 锁定的上游界面 `dc4af0e4d9e8` 与引擎 `f40c3494c776`，保留 sticky-ip 域名地址缓存，并增加针对 F50 SIPA RAWIP IPv4 出口帧的兼容补丁。包含日志查询重试、错误显示与筛选隔离，以及 DNS、订阅、日志工作线程、TLS、Meek、QUIC 和 UDP 缓冲处理更新。[源码与更新记录](source/UPSTREAM-20261018.md)
+同步 DaeNext 引擎至 `b42d9b20f385`，保留当前 DaedNext 界面 `dc4af0e4d9e8`、sticky-ip 缓存、F50 SIPA RAWIP 兼容和 LPM 内存重试补丁。上游更新涉及 eBPF 附着后端、能力检测和 Aya 加载器元数据；兼容补丁已重新生成并锁定哈希。完整构建与检查由候选工作流验证。[源码与更新记录](source/UPSTREAM-20261022.md)
 
-`v3.2.1` 目前是兼容候选版本：eBPF 偏移解析单测和源码 CI 已通过，完整 ARM64 发布包及 F50/E5 实机流量验证仍待完成。F50 需要使用 veth 网络命名空间；升级前需确认各设备内核的 BTF、TC/eBPF 和 veth 能力。
+`v3.2.2` 目前是候选版本；完成完整发布构建、上游测试和固件集成验证前，不视为已发布或设备实测。F50 需要使用 veth 网络命名空间；升级前需确认各设备内核的 BTF、TC/eBPF 和 veth 能力。
 
 生产构建采用上游默认功能：Aya/eBPF、jemalloc、BoringSSL。Web 文件安装到 `/usr/share/daed/web`，使用最新上游界面；仓库根目录的开发演示页面不进入安装包。
 
 ## 安装包
 
-- Debian/Ubuntu：`rust-daed_3.2.1-linux-x86_64_v2_sse.deb` 或 `rust-daed_3.2.1-linux-x86_64_v3_avx2.deb`。两种 CPU 基线分别编译。
+- Debian/Ubuntu：候选构建成功后提供 `rust-daed_3.2.2` 对应的 x86-64 v2/v3 安装包。两种 CPU 基线分别编译。
 - OpenWrt 25.12：`rust-daed-r2s.apk`、`rust-daed-r3s.apk`、`rust-daed-r4s.apk`、`rust-daed-x86.apk`，实际为 SDK 生成的 APK v3。
 - 对应的 `*-v2.apk` 是 APK v2 归档，仅用于匹配的旧 APK 工具链，不能安装到要求 v3 的系统。
 

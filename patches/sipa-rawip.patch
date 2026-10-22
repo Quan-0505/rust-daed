@@ -1,8 +1,11 @@
 diff --git a/crates/dae-ebpf-program/src/packet.rs b/crates/dae-ebpf-program/src/packet.rs
-index bc4ef7c9..f60ecf63 100644
+index bc4ef7c9..e67135e1 100644
 --- a/crates/dae-ebpf-program/src/packet.rs
 +++ b/crates/dae-ebpf-program/src/packet.rs
-@@ -38,0 +39,74 @@ const VLAN_INNER_8021AD: u8 = 0b0000_1000;
+@@ -535,3 +535,77 @@ pub unsafe fn build_sock_tuple(info: *const ParsedPacket, tuple: *mut BpfSockTup
+         }
+     }
+ }
 +/// Select an Ethernet header for the WAN L3 hook when a RAWIP driver leaves
 +/// an IPv4 Ethernet frame in the skb data. Other packets retain the L3 offset.
 +#[inline(always)]
@@ -81,7 +84,11 @@ diff --git a/crates/dae-ebpf-program/src/programs.rs b/crates/dae-ebpf-program/s
 index 24115764..57ef88b8 100644
 --- a/crates/dae-ebpf-program/src/programs.rs
 +++ b/crates/dae-ebpf-program/src/programs.rs
-@@ -48 +48,2 @@ pub extern "C" fn tproxy_wan_egress_l3(ctx: *mut __sk_buff) -> i32 {
+@@ -45,5 +45,6 @@ pub extern "C" fn tproxy_wan_egress_l2(ctx: *mut __sk_buff) -> i32 {
+ #[unsafe(no_mangle)]
+ #[unsafe(link_section = "classifier/wan_egress_l3")]
+ pub extern "C" fn tproxy_wan_egress_l3(ctx: *mut __sk_buff) -> i32 {
 -    crate::tproxy::wan_egress(ctx, 0)
 +    let link_h_len = unsafe { crate::packet::detect_wan_egress_l3_link_h_len(ctx) };
 +    crate::tproxy::wan_egress(ctx, link_h_len)
+ }
