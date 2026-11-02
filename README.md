@@ -6,7 +6,7 @@ Rust 原生 daed + sticky-ip，基于固定版本的 DaedNext 管理界面和 Da
 
 ## v3.2.2 上游同步候选版
 
-同步 DaeNext 引擎至 `b42d9b20f385`，保留当前 DaedNext 界面 `dc4af0e4d9e8`、sticky-ip 缓存、F50 SIPA RAWIP 兼容和 LPM 内存重试补丁。上游更新涉及 eBPF 附着后端、能力检测和 Aya 加载器元数据；兼容补丁已重新生成并锁定哈希。完整构建与检查由候选工作流验证。[源码与更新记录](source/UPSTREAM-20261022.md)
+同步 DaeNext 引擎至 `d0c477e62617`，保留当前 DaedNext 界面 `76ad4577501b`、sticky-ip 缓存、F50 SIPA RAWIP 兼容和 LPM 内存重试补丁。上游更新涉及 eBPF 附着后端、能力检测和 Aya 加载器元数据；兼容补丁已重新生成并锁定哈希。完整构建与检查由候选工作流验证。[源码与更新记录](source/UPSTREAM-20261022.md)
 
 `v3.2.2` 目前是候选版本；完成完整发布构建、上游测试和固件集成验证前，不视为已发布或设备实测。F50 需要使用 veth 网络命名空间；升级前需确认各设备内核的 BTF、TC/eBPF 和 veth 能力。
 

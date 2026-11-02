@@ -2,11 +2,11 @@
   "version": "3.2.2",
   "ui": {
     "repository": "https://github.com/ksong008/DaedNext.git",
-    "revision": "dc4af0e4d9e855e0d6ba6d719a2cc70f0be64327"
+    "revision": "76ad4577501ba327da304c0f520f6fa707594ef8"
   },
   "core": {
     "repository": "https://github.com/ksong008/DaeNext.git",
-    "revision": "b42d9b20f3856574bcd8f82fc0b43dbcbdf0054b"
+    "revision": "d0c477e626178d75130f95ef5c6dfe2fcd4a0246"
   },
   "release_profile": {
     "lto": false,
