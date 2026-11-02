@@ -35,3 +35,7 @@ bash scripts/test-release.sh /absolute/path/to/new-output-directory
 `source/upstream.json` 固定版本、源码提交、补丁 SHA256 和 CPU 基线。准备脚本拒绝覆盖已有源码目录；构建默认两个任务，关闭 LTO，生成独立 amd64-v2/v3 与 ARM64 程序，以及 2 个 DEB 和 4 个原始 APK。`.github/workflows/build-release.yml` 会在 Linux CI 构建并校验这些包；正式发布前由 `.github/workflows/repack-apk-v3.yml` 使用 OpenWrt SDK 转换 v3。
 
 `patches/sticky-ip-full.patch` 与 `source/sticky.rs` 保留 sticky-ip 改动及单元测试；上游许可证与归属保留。项目许可见 [LICENSE](LICENSE)。源码与安装包只使用公开物料，不包含订阅、节点、密码、令牌、数据库或设备备份。
+
+## 2026-11-02 上游同步
+
+当前固定界面源码为 `76ad4577501b`，DaeNext 引擎为 `d0c477e62617`，包含监听器发布、socket cookie 连续性及回滚处理更新。保留 sticky-ip、SIPA RAWIP 和 BPF LPM 兼容补丁。源码准备校验已通过；完整构建与 Linux 校验仍以对应 Actions 结果为准，本节不代表已发布新安装包。
