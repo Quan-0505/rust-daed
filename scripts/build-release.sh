@@ -17,6 +17,9 @@ pnpm --dir "$ui" build --filter daed
 pnpm --dir "$ui" --filter daed check-types
 cp -a "$ui/apps/web/dist" "$out/web"
 cd "$ui/DaeNext"
+# rust-toolchain.toml selects the compiler independently of the runner default.
+release_toolchain=$(rustup show active-toolchain | awk '{print $1}')
+rustup target add --toolchain "$release_toolchain" x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu
 cargo fetch --locked
 export DAE_DAEMON_VERSION="daed rust-native product version=v$version ui=$ui core=$core+sticky+sipa-rawip+bpf-lpm-retry features=native-ebpf,jemalloc,boringssl profile=release,lto-off"
 cache=${RUST_RELEASE_CACHE:-/build/rust-daed-$version}
